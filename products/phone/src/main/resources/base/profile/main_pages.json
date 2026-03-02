@@ -1,0 +1,16 @@
+{
+  "src": [
+    "pages/Index",
+    "pages/BirdSearchPage",
+    "pages/BirdConservationPage",
+    "pages/ProfilePage",
+    "pages/BirdShare",
+    "pages/BirdSoundRecognitionPage",
+    "pages/HomePage",
+    "pages/BirdDetail",
+    "pages/BirdGallery",
+    "pages/BirdLogin",
+    "pages/BirdRegister",
+    "pages/BirdRecognitionPage"
+  ]
+}

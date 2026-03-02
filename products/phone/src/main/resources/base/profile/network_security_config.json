@@ -1,0 +1,13 @@
+{
+  "cleartextTrafficPermitted": true,
+  "domainSettings": [
+    {
+      "name": "10.0.2.2",
+      "cleartextTrafficPermitted": true
+    },
+    {
+      "name": "127.0.0.1",
+      "cleartextTrafficPermitted": true
+    }
+  ]
+}

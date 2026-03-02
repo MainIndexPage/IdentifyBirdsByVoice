@@ -1,0 +1,24 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "module description"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "label"
+    },
+    {
+      "name": "mic_permission_reason",
+      "value": "识别鸟鸣需要录制环境声音"
+    },
+    {
+      "name": "internet_permission_reason",
+      "value": "需要网络权限来上传录音文件并识别鸟类"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "name": "phone",
+  "version": "1.0.0",
+  "description": "Please describe the basic information.",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "MainPage": "file:../../common/basic/src/main/ets/components",
+    "@ohos/tensorflow-lite": "^2.15.0",
+    "@ohos/file.fs": "^1.0.0",
+    "@ohos/file.path": "^1.0.0",
+    "@ohos/audio": "^1.0.0",
+    "@ohos/accesscontrolmanager": "^1.0.0",
+    "@ohos/tensorflow-lite": "^2.15.0",
+    "@tensorflow/tfjs": "^4.17.0",
+    "@tensorflow/tfjs-backend-cpu": "^4.17.0"
+  },
+  "devDependencies": {
+    "@ohos/hypium": "1.0.16",
+    "@kit.AbilityKit": "1.0.0",
+    "@kit.AudioKit": "1.0.0",
+    "@kit.BasicServicesKit": "1.0.0",
+    "@kit.AbilityKit": "1.0.0",
+    "@kit.AudioKit": "1.0.0",
+    "@kit.BasicServicesKit": "1.0.0",
+    "@kit.BundleManager": "1.0.0"
+  }
+}
