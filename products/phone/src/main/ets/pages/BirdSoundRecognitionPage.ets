@@ -53,9 +53,9 @@ struct BirdSoundRecognitionPage {
   @State private recordBtnText: string = '开始录音';
   @State private currentNavIndex: number = 2;
 
-  // 【新增】控制是否显示详情卡片
+  // 控制是否显示详情卡片
   @State private showDetailCard: boolean = false;
-  // 【新增】存储鸟类详细信息
+  // 存储鸟类详细信息
   @State private birdDetail: BirdDetailInfo | null = null;
 
   // ================= 配置区 =================
