@@ -28,7 +28,7 @@ interface BackendResponse {
 }
 
 /**
- * 【新增】鸟类详细信息接口（预留数据库字段）
+ * 鸟类详细信息接口（预留数据库字段）
  */
 interface BirdDetailInfo {
   standardChineseName: string;      // 标准中文名
