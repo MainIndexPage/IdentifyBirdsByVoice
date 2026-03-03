@@ -7,7 +7,8 @@ import router from '@ohos.router';
 import hilog from '@ohos.hilog';
 import picker from '@ohos.file.picker';
 import { BusinessError } from '@ohos.base';
-//test1
+
+// ================= 接口定义区 =================
 interface NavItem {
   name: string;
   icon: Resource;
@@ -26,9 +27,25 @@ interface BackendResponse {
   data: BirdResult[];
 }
 
+/**
+ * 【新增】鸟类详细信息接口（预留数据库字段）
+ */
+interface BirdDetailInfo {
+  standardChineseName: string;      // 标准中文名
+  latinName: string;                // 拉丁学名
+  genusExplanation: string;         // 属名解释
+  englishCommonName: string;        // 英文俗名
+  englishNameExplanation: string;   // 英文名解释
+  speciesDescription: string;       // 物种介绍
+  // 预留字段：图片URL、保护级别、分布区域等
+  // imageUrl?: string;
+  // conservationLevel?: string;
+}
+
 @Entry
 @Component
 struct BirdSoundRecognitionPage {
+  // ================= 状态管理区 =================
   @State private isRecording: boolean = false;
   @State private isRecognizing: boolean = false;
   @State private recordedFilePath: string = '';
@@ -36,6 +53,12 @@ struct BirdSoundRecognitionPage {
   @State private recordBtnText: string = '开始录音';
   @State private currentNavIndex: number = 2;
 
+  // 【新增】控制是否显示详情卡片
+  @State private showDetailCard: boolean = false;
+  // 【新增】存储鸟类详细信息
+  @State private birdDetail: BirdDetailInfo | null = null;
+
+  // ================= 配置区 =================
   private navItems: NavItem[] = [
     { name: '首页', icon: $r('app.media.nav_home'), route: 'pages/HomePage' },
     { name: '图鉴', icon: $r('app.media.nav_encyclopedia'), route: 'pages/BirdGallery' },
@@ -46,6 +69,7 @@ struct BirdSoundRecognitionPage {
 
   private readonly SERVER_URL: string = 'http://10.0.2.2:8000/api/bird/recognize';
 
+  // ================= 工具函数区 =================
   private stringToArrayBuffer(str: string): ArrayBuffer {
     const buffer: ArrayBuffer = new ArrayBuffer(str.length);
     const view: Uint8Array = new Uint8Array(buffer);
@@ -63,6 +87,7 @@ struct BirdSoundRecognitionPage {
     AudioCapture.release();
   }
 
+  // ================= 权限与文件管理 =================
   private async checkPermission(): Promise<boolean> {
     const context: common.UIAbilityContext = getContext(this) as common.UIAbilityContext;
     const atManager: abilityAccessCtrl.AtManager = abilityAccessCtrl.createAtManager();
@@ -72,9 +97,7 @@ struct BirdSoundRecognitionPage {
       );
       const tokenId: number = bundleInfo.appInfo?.accessTokenId as number;
 
-      // 【修复】这里加 await
       const micPerm: abilityAccessCtrl.GrantStatus = await atManager.checkAccessToken(tokenId, 'ohos.permission.MICROPHONE');
-
       if (micPerm === abilityAccessCtrl.GrantStatus.PERMISSION_DENIED) {
         await atManager.requestPermissionsFromUser(context, ['ohos.permission.MICROPHONE', 'ohos.permission.INTERNET']);
       }
@@ -96,6 +119,7 @@ struct BirdSoundRecognitionPage {
     return filePath;
   }
 
+  // ================= 核心业务逻辑 =================
   private async handleClick() {
     if (this.isRecording) {
       this.isRecording = false;
@@ -125,6 +149,8 @@ struct BirdSoundRecognitionPage {
       this.isRecording = true;
       this.recordBtnText = '停止录音';
       this.resultText = '正在录音中...';
+      // 开始录音前隐藏详情卡片
+      this.showDetailCard = false;
 
       AudioCapture.start(this.recordedFilePath).catch((err: Error) => {
         console.error('BirdApp', '录音异常', err.message);
@@ -137,9 +163,13 @@ struct BirdSoundRecognitionPage {
     }
   }
 
+  /**
+   * 【核心修改】识别成功后，加载鸟类详情
+   */
   private async uploadAudioData(buffer: ArrayBuffer, fileName: string = 'bird.wav') {
     this.isRecognizing = true;
     this.resultText = '正在识别中...';
+    this.showDetailCard = false; // 识别前隐藏旧卡片
 
     try {
       const boundary: string = '----Boundary' + Date.now();
@@ -168,21 +198,57 @@ struct BirdSoundRecognitionPage {
         const res: BackendResponse = JSON.parse(response.result as string) as BackendResponse;
         if (res.code === 200 && res.data && res.data.length > 0) {
           const topBird: BirdResult = res.data[0];
-          this.resultText = `🎉 识别成功！\n鸟类：${topBird.bird_name}\n置信度：${(topBird.confidence * 100).toFixed(2)}%`;
+          this.resultText = `🎉 识别成功！\n置信度：${(topBird.confidence * 100).toFixed(2)}%`;
+
+          // ================= 【关键新增】加载鸟类详情 =================
+          await this.loadBirdDetail(topBird.label_id, topBird.bird_name);
+          // ===========================================================
+
         } else {
           this.resultText = '未识别到有效鸟类';
+          this.showDetailCard = false;
         }
       } else {
         this.resultText = '识别失败';
+        this.showDetailCard = false;
         console.error('BirdApp', '服务器响应：', response.result);
       }
       httpRequest.destroy();
     } catch (e) {
       this.resultText = '网络连接失败';
+      this.showDetailCard = false;
       console.error('BirdApp', '上传异常', JSON.stringify(e));
     } finally {
       this.isRecognizing = false;
     }
+  }
+
+  /**
+   * 【新增】预留接口：从数据库加载鸟类详情
+   * @param labelId 鸟类标签ID
+   * @param birdName 鸟类名称（用于匹配）
+   */
+  private async loadBirdDetail(labelId: number, birdName: string): Promise<void> {
+    console.info('BirdApp', `准备加载鸟类详情: ID=${labelId}, Name=${birdName}`);
+
+    // TODO: 【预留数据库接口】
+    // 未来接入数据库时，替换下面的模拟数据逻辑：
+    // 1. 根据 labelId 或 birdName 查询本地 SQLite 数据库
+    // 2. 或者调用后端接口 /api/bird/detail/{labelId}
+    // 3. 将查询结果赋值给 this.birdDetail
+
+    // ================= 【当前使用模拟数据】 =================
+    this.birdDetail = {
+      standardChineseName: '亚热带多拉霸鹟（也译尖翅伪霸鹟，为同物异名）',
+      latinName: 'Pseudocolopteryx acutipennis',
+      genusExplanation: '属名 Pseudocolopteryx 为多拉霸鹟属（也叫伪霸鹟属），种加词 acutipennis 意为 “尖翅的”',
+      englishCommonName: 'Subtropical Doradito',
+      englishNameExplanation: '直译即为 “亚热带多拉霸鹟”，是该物种的国际通用英文名称',
+      speciesDescription: '该物种是雀形目霸鹟科的小型鸟类，原生分布于南美洲，多栖息在亚热带 / 热带的湿润灌丛、沼泽湿地周边。'
+    };
+
+    this.showDetailCard = true;
+    // ========================================================
   }
 
   private async uploadRecordedFile() {
@@ -200,15 +266,9 @@ struct BirdSoundRecognitionPage {
     await this.uploadAudioData(buffer, 'recorded.wav');
   }
 
-  /**
-   * 【修复】文件选择：移除 MIMEType，使用默认选择所有文件
-   */
   private async pickAndUploadAudio() {
     try {
       const documentPicker: picker.DocumentViewPicker = new picker.DocumentViewPicker();
-
-      // 【修复1】DocumentSelectOptions 去掉 MIMEType，只保留 maxSelectNumber
-      // 或者根据你的SDK版本，可能是 suffixFilters
       const options: picker.DocumentSelectOptions = {
         maxSelectNumber: 1
       };
@@ -244,6 +304,7 @@ struct BirdSoundRecognitionPage {
     }
   }
 
+  // ================= 导航与UI构建 =================
   private navClick(index: number) {
     hilog.info(0x0000, 'BirdRecorderPage', `Nav clicked: ${index}`);
     if (index === this.currentNavIndex) return;
@@ -277,148 +338,224 @@ struct BirdSoundRecognitionPage {
     .border({ width: { top: 1 }, color: '#E0E0E0' })
   }
 
-  build() {
-    Stack() {
-      Column({ space: 20 }) {
-        Column() {
-          Text('听音识鸟')
-            .fontSize(24)
+  /**
+   * 【新增】鸟类详情卡片构建器
+   */
+  @Builder
+  BirdDetailCard() {
+    if (this.showDetailCard && this.birdDetail !== null) {
+      Column({ space: 12 }) {
+        // 标题行
+        Row() {
+          Text('📖 识别详情')
+            .fontSize(18)
             .fontWeight(FontWeight.Bold)
             .fontColor('#333333')
-            .margin({ top: 40, bottom: 20 });
-
-          Text(this.resultText)
-            .fontSize(16)
-            .padding(20)
-            .width('90%')
-            .borderRadius(10)
-            .backgroundColor('#F5F5F5')
-            .textAlign(TextAlign.Center);
+          Blank()
         }
+        .width('100%')
 
-        if (this.isRecording || this.isRecognizing) {
-          LoadingProgress()
-            .width(50)
-            .height(50)
-            .color('#007DFF');
-        }
+        // 【修复1】使用命名参数对象传参
+        DetailItemBuilder({
+          label: '标准中文名',
+          content: this.birdDetail.standardChineseName,
+          bgColor: '#E8F5E9'
+        })
 
-        Blank().height(10);
+        DetailItemBuilder({
+          label: '拉丁学名',
+          content: this.birdDetail.latinName,
+          bgColor: '#FFF3E0',
+          isItalic: true
+        })
 
-        Column({ space: 15 }) {
-          // 大录音按钮
-          Button(this.recordBtnText) {
-            Stack() {
-              Circle()
-                .width(280)
-                .height(280)
-                .fill(this.isRecording ? '#FFEBEE' : '#E8F5E9')
-                .opacity(0.5);
-              Circle()
-                .width(240)
-                .height(240)
-                .fill(this.isRecording ? '#EF9A9A' : '#C8E6C9')
-                .opacity(0.7);
-              Circle()
-                .width(200)
-                .height(200)
-                .fill(this.isRecording ? '#F44336' : '#4CAF50')
-                .shadow({
-                  radius: 20,
-                  color: this.isRecording ? '#F44336' : '#4CAF50',
-                  offsetX: 0,
-                  offsetY: 8
-                });
-              Column() {
-                // 【恢复】使用你的图标资源
-                Image(this.isRecording ? $r('app.media.ic_stop') : $r('app.media.ic_microphone'))
-                  .width(48)
-                  .height(48)
-                  .fillColor('#FFFFFF')
-                  .margin({ bottom: 8 })
-                Text(this.recordBtnText)
-                  .fontSize(16)
-                  .fontColor('#FFFFFF');
+        DetailItemBuilder({
+          label: '名称释义',
+          content: this.birdDetail.genusExplanation,
+          bgColor: '#F5F5F5'
+        })
+
+        DetailItemBuilder({
+          label: '英文俗名',
+          content: this.birdDetail.englishCommonName,
+          bgColor: '#E3F2FD'
+        })
+
+        DetailItemBuilder({
+          label: '英文释义',
+          content: this.birdDetail.englishNameExplanation,
+          bgColor: '#F5F5F5'
+        })
+
+        DetailItemBuilder({
+          label: '物种介绍',
+          content: this.birdDetail.speciesDescription,
+          bgColor: '#FCE4EC'
+        })
+      }
+      .width('90%')
+      .padding(16)
+      .borderRadius(12)
+      .backgroundColor('#FFFFFF')
+      .shadow({
+        radius: 10,
+        color: '#1F000000',
+        offsetX: 0,
+        offsetY: 2
+      })
+      .margin({ top: 10, bottom: 10 })
+      .animation({
+        duration: 300,
+        curve: Curve.EaseInOut
+      })
+    }
+  }
+
+
+  build() {
+    Stack() {
+      Scroll() { // 【新增】外层包裹 Scroll，防止详情卡片过长
+        Column({ space: 20 }) {
+          Column() {
+            Text('听音识鸟')
+              .fontSize(24)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#333333')
+              .margin({ top: 40, bottom: 10 });
+
+            Text(this.resultText)
+              .fontSize(16)
+              .padding(20)
+              .width('90%')
+              .borderRadius(10)
+              .backgroundColor('#F5F5F5')
+              .textAlign(TextAlign.Center);
+          }
+
+          // 【新增】鸟类详情卡片
+          this.BirdDetailCard()
+
+          if (this.isRecording || this.isRecognizing) {
+            LoadingProgress()
+              .width(50)
+              .height(50)
+              .color('#007DFF')
+              .margin({ top: 20 });
+          }
+
+          Blank().height(10);
+
+          Column({ space: 15 }) {
+            // 大录音按钮
+            Button(this.recordBtnText) {
+              Stack() {
+                Circle()
+                  .width(280)
+                  .height(280)
+                  .fill(this.isRecording ? '#FFEBEE' : '#E8F5E9')
+                  .opacity(0.5);
+                Circle()
+                  .width(240)
+                  .height(240)
+                  .fill(this.isRecording ? '#EF9A9A' : '#C8E6C9')
+                  .opacity(0.7);
+                Circle()
+                  .width(200)
+                  .height(200)
+                  .fill(this.isRecording ? '#F44336' : '#4CAF50')
+                  .shadow({
+                    radius: 20,
+                    color: this.isRecording ? '#F44336' : '#4CAF50',
+                    offsetX: 0,
+                    offsetY: 8
+                  });
+                Column() {
+                  Image(this.isRecording ? $r('app.media.ic_stop') : $r('app.media.ic_microphone'))
+                    .width(48)
+                    .height(48)
+                    .fillColor('#FFFFFF')
+                    .margin({ bottom: 8 })
+                  Text(this.recordBtnText)
+                    .fontSize(16)
+                    .fontColor('#FFFFFF');
+                }
               }
             }
-          }
-          .width(280)
-          .height(280)
-          // 【修复2】ButtonType.NORMAL -> ButtonType.Normal
-          .type(ButtonType.Normal)
-          .backgroundColor('#00000000')
-          .enabled(!this.isRecognizing)
-          .onClick(() => {
-            this.handleClick();
-          });
-
-          Button('识别刚才的录音')
-            .width('80%')
-            .height(50)
-            .backgroundColor('#007DFF')
-            .enabled(!this.isRecording && !this.isRecognizing && this.recordedFilePath !== '')
-            .onClick(() => {
-              this.uploadRecordedFile();
-            });
-
-          // 底部三个功能入口
-          Row() {
-            Column() {
-              // 【恢复】使用你的图标资源
-              Image($r('app.media.ic_history'))
-                .width(24)
-                .height(24)
-                .fillColor('#666666')
-                .margin({ bottom: 4 });
-              Text('识别历史')
-                .fontSize(12)
-                .fontColor('#666666');
-            }
-            .layoutWeight(1)
-            .onClick(() => {
-              promptAction.showToast({ message: '功能开发中' });
-            });
-
-            Column() {
-              // 【恢复】使用你的图标资源（确保你有这个图标，没有就换一个已有的）
-              Image($r('app.media.ic_public_folder'))
-                .width(24)
-                .height(24)
-                .fillColor('#666666')
-                .margin({ bottom: 4 });
-              Text('上传音频')
-                .fontSize(12)
-                .fontColor('#666666');
-            }
-            .layoutWeight(1)
+            .width(280)
+            .height(280)
+            .type(ButtonType.Normal)
+            .backgroundColor('#00000000')
             .enabled(!this.isRecognizing)
             .onClick(() => {
-              this.pickAndUploadAudio();
+              this.handleClick();
             });
 
-            Column() {
-              // 【恢复】使用你的图标资源
-              Image($r('app.media.camera'))
-                .width(24)
-                .height(24)
-                .fillColor('#666666')
-                .margin({ bottom: 4 });
-              Text('图片识鸟')
-                .fontSize(12)
-                .fontColor('#666666');
+            Button('识别刚才的录音')
+              .width('80%')
+              .height(50)
+              .backgroundColor('#007DFF')
+              .enabled(!this.isRecording && !this.isRecognizing && this.recordedFilePath !== '')
+              .onClick(() => {
+                this.uploadRecordedFile();
+              });
+
+            Row() {
+              Column() {
+                Image($r('app.media.ic_history'))
+                  .width(24)
+                  .height(24)
+                  .fillColor('#666666')
+                  .margin({ bottom: 4 });
+                Text('识别历史')
+                  .fontSize(12)
+                  .fontColor('#666666');
+              }
+              .layoutWeight(1)
+              .onClick(() => {
+                promptAction.showToast({ message: '功能开发中' });
+              });
+
+              Column() {
+                Image($r('app.media.ic_public_folder'))
+                  .width(24)
+                  .height(24)
+                  .fillColor('#666666')
+                  .margin({ bottom: 4 });
+                Text('上传音频')
+                  .fontSize(12)
+                  .fontColor('#666666');
+              }
+              .layoutWeight(1)
+              .enabled(!this.isRecognizing)
+              .onClick(() => {
+                this.pickAndUploadAudio();
+              });
+
+              Column() {
+                Image($r('app.media.camera'))
+                  .width(24)
+                  .height(24)
+                  .fillColor('#666666')
+                  .margin({ bottom: 4 });
+                Text('图片识鸟')
+                  .fontSize(12)
+                  .fontColor('#666666');
+              }
+              .layoutWeight(1)
+              .onClick(() => {
+                promptAction.showToast({ message: '功能开发中' });
+              });
             }
-            .layoutWeight(1)
-            .onClick(() => {
-              promptAction.showToast({ message: '功能开发中' });
-            });
+            .width('100%')
+            .margin({ top: 20, bottom: 20 });
           }
-          .width('100%')
-          .margin({ top: 20 });
+          .padding({ bottom: 20, top: 10 });
         }
-        .padding({ bottom: 20, top: 10 });
+        .width('100%')
       }
       .width('100%')
       .height('100%')
+      .scrollBar(BarState.Off) // 隐藏滚动条
 
       Column() {
         Blank()
@@ -430,5 +567,41 @@ struct BirdSoundRecognitionPage {
     }
     .width('100%')
     .height('100%')
+  }
+}
+
+/**
+ * 【辅助组件】详情项构建器
+ */
+@Component
+struct DetailItemBuilder {
+  @Prop label: string = '';
+  @Prop content: string = '';
+  @Prop bgColor: ResourceColor = '#F5F5F5';
+  @Prop isItalic: boolean = false;
+
+  build() {
+    Column() {
+      Row() {
+        Text(this.label)
+          .fontSize(12)
+          .fontColor('#666666')
+          .fontWeight(FontWeight.Medium)
+        Blank()
+      }
+      .width('100%')
+      .margin({ bottom: 4 })
+
+      Text(this.content)
+        .fontSize(14)
+        .fontColor('#333333')
+        .fontStyle(this.isItalic ? FontStyle.Italic : FontStyle.Normal)
+        .width('100%')
+        .textAlign(TextAlign.Start)
+    }
+    .width('100%')
+    .padding(12)
+    .borderRadius(8)
+    .backgroundColor(this.bgColor)
   }
 }
