@@ -61,9 +61,15 @@ struct BirdDetailPage {
   @State noteText: string = ''
   @State showNotePanel: boolean = false
   @State showSharePanel: boolean = false
-
+  /* ✅ 返回图鉴页面 */
+  goBack() {
+    router.replaceUrl({
+      url: 'pages/BirdGallery'
+    });
+  }
   build() {
     Column() {
+      this.TopBar()
     Scroll() {
       Column({ space: 16 }) {
         /* 1. 顶部大图 = 沉浸体验 */
@@ -84,12 +90,40 @@ struct BirdDetailPage {
 
     }
     .width('100%')
-
+    .height('100%')
     .backgroundColor('#F5F5F5')
 
-
   }
+  @Builder
+  TopBar() {
+    Row() {
+      /* 返回按钮 */
+      Row() {
+        Image($r('app.media.ic_back'))
+          .width(24)
+          .height(24)
+          .fillColor('#333')
+          .onClick(this.goBack);
+      }
+      .width(40)
 
+
+
+      Text('鸟类详情')
+        .fontSize(18)
+        .fontWeight(FontWeight.Medium)
+        .layoutWeight(1)
+        .textAlign(TextAlign.Center)
+
+      /* 占位，保持对称 */
+      Blank()
+        .width(40)
+    }
+    .width('100%')
+    .height(56)
+    .padding({ left: 8, right: 8 })
+    .backgroundColor('#FFFFFF')
+  }
   /* -------------------- 区域组件 -------------------- */
   @Builder
   HeroImage() {
