@@ -248,7 +248,77 @@ export struct HomePage {
             hilog.info(0x0000, 'HomePage', '👥 Community card clicked');
             this.goToPage('pages/BirdShare');
           })
+          Row() {
+            // 左侧：实时监控
+            Stack() {
+              Image($r('app.media.card_bg_monitor'))  // 需要添加对应的背景图资源
+                .width('100%')
+                .height('100%')
+                .objectFit(ImageFit.Cover)
+                .borderRadius(12)
+                .blur(8)
+
+              Column() {
+                Text('实时监控')
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#FFFFFF')
+                  .textShadow({
+                    radius: 2,
+                    color: Color.Black,
+                    offsetX: 2,
+                    offsetY: 2
+                  })
+                  .margin({ bottom: 8 })
+              }
+              .justifyContent(FlexAlign.Center)
+            }
+            .width('45%')
+            .height(100)
+            .clickEffect({ level: ClickEffectLevel.MIDDLE })
+            .onClick(() => {
+              hilog.info(0x0000, 'HomePage', '📹 Monitor card clicked');
+              this.goToPage('pages/BirdMonitorPage');  // 根据实际页面路由修改
+            })
+
+            // 中间间距
+            Blank().width('10%')
+
+            // 右侧：公益
+            Stack() {
+              Image($r('app.media.card_bg_charity'))  // 需要添加对应的背景图资源
+                .width('100%')
+                .height('100%')
+                .objectFit(ImageFit.Cover)
+                .borderRadius(12)
+                .blur(8)
+
+              Column() {
+                Text('公益')
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#FFFFFF')
+                  .textShadow({
+                    radius: 2,
+                    color: Color.Black,
+                    offsetX: 2,
+                    offsetY: 2
+                  })
+                  .margin({ bottom: 8 })
+              }
+              .justifyContent(FlexAlign.Center)
+            }
+            .width('45%')
+            .height(100)
+            .clickEffect({ level: ClickEffectLevel.MIDDLE })
+            .onClick(() => {
+              hilog.info(0x0000, 'HomePage', '❤️ Charity card clicked');
+              this.goToPage('pages/BirdConservationPage');  // 根据实际页面路由修改
+            })
+          }
+          .width('90%')
         }
+
         .width('100%')
         .layoutWeight(1)
         .justifyContent(FlexAlign.Start)

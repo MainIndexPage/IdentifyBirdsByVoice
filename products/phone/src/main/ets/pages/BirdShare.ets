@@ -85,7 +85,7 @@ struct BirdSharingPage {
       {
         id: '1', userId: 'user1', userName: '观鸟达人小王',
         userAvatar: 'https://example.com/avatar1.jpg',
-        birdName: '红嘴蓝鹊', birdImage: 'https://example.com/bird1.jpg',
+        birdName: '红嘴蓝鹊', birdImage: 'https://miaobi-lite.bj.bcebos.com/miaobi/5mao/b%2756u55p6X5Luj6KGo5LuA5LmI5Yqo54mpXzE3MzQwMjMxNDMuMjU4MzIxNQ%3D%3D%27/0.png',
         description: '今天在公园拍到了美丽的红嘴蓝鹊，羽毛颜色特别鲜艳！#今日识鸟#',
         tags: ['#今日识鸟#', '#红嘴蓝鹊#'], location: '中山公园',
         timestamp: Date.now() - 3600000, likes: 128, comments: 23, shares: 15,
@@ -94,7 +94,7 @@ struct BirdSharingPage {
       {
         id: '2', userId: 'user2', userName: '自然观察者',
         userAvatar: 'https://example.com/avatar2.jpg',
-        birdName: '黑脸琵鹭', birdImage: 'https://example.com/bird2.jpg',
+        birdName: '黑脸琵鹭', birdImage: 'https://qcloud.dpfile.com/pc/OJ358PJMpGKtVpz2AUYpdW2hNALIuW6vFGRcltbbiDZhCNhCNE_CUFkHbnIxoUZl.jpg',
         description: '罕见鸟类记录！在深圳湾发现了濒危物种黑脸琵鹭，数量稀少，非常珍贵！#罕见鸟类记录#',
         tags: ['#罕见鸟类记录#', '#黑脸琵鹭#', '#濒危物种#'], location: '深圳湾公园',
         timestamp: Date.now() - 7200000, likes: 256, comments: 45, shares: 32,

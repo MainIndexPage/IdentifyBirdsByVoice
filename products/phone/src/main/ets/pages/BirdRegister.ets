@@ -156,7 +156,7 @@ struct BirdRegister {
     // 后续：回登录页 or 直接登录
     setTimeout(() => {
       router.pushUrl({
-        url: 'pages/BirdLogin'
+        url: 'pages/SplashPage'
       })
     }, 2000)
   }

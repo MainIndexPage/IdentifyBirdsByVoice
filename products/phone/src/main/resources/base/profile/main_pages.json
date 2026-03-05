@@ -11,6 +11,7 @@
     "pages/BirdGallery",
     "pages/BirdLogin",
     "pages/BirdRegister",
-    "pages/BirdRecognitionPage"
+    "pages/BirdRecognitionPage",
+    "pages/SplashPage"
   ]
 }

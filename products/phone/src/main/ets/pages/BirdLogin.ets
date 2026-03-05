@@ -108,6 +108,15 @@ struct LoginPage {
         .borderRadius(8)
         .onClick(() => {
           this.handleLogin()
+          // TODO: 这里先调用你的登录API验证账号密码
+          // 假设登录成功：
+
+          // 保存登录状态（可选）
+          //AppStorage.SetOrCreate('isLoggedIn', true)
+          //  跳转到闪屏页（不是直接跳首页！）
+          router.replaceUrl({
+            url: 'pages/SplashPage'
+          })
         })
 
       // 6. 辅助操作（忘记密码/注册账号）
