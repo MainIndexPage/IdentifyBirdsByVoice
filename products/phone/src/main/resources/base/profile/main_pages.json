@@ -13,6 +13,7 @@
     "pages/BirdRegister",
     "pages/BirdRecognitionPage",
     "pages/SplashPage",
-    "pages/BirdMonitorPage"
+    "pages/BirdMonitorPage",
+    "pages/BirdCharityPage"
   ]
 }

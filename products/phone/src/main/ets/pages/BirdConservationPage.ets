@@ -138,7 +138,12 @@ struct BirdConservationPage {
 
       Button('立即捐赠')
         .width('100%').height(48)
-        .backgroundColor('#4CAF50').borderRadius(24);
+        .backgroundColor('#4CAF50').borderRadius(24)
+        .onClick(() => {
+          router.pushUrl({
+            url: 'pages/BirdCharityPage'
+          });
+        });
 
       Divider().color('#EEEEEE').strokeWidth(1);
       Text('成为志愿者').fontSize(18).fontWeight(FontWeight.Medium).fontColor('#333');
