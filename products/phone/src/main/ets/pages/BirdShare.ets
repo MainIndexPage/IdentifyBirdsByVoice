@@ -128,7 +128,6 @@ struct BirdSharingPage {
       }
       .height('100%')
     }
-    .title('鸟类分享')
     .hideBackButton(false)
     .backgroundColor('#FFFFFF')
   }

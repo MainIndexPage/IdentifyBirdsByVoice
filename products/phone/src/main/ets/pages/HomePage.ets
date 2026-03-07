@@ -94,19 +94,22 @@ export struct HomePage {
           .margin({ top: 30, bottom: 10 })
 
         // 搜索框
+        // 核心修改：移除 onSubmit 提交事件，新增 onClick 点击事件
         Search({ value: this.searchValue, placeholder: '搜索鸟类...' })
           .width('90%')
           .height(40)
           .margin({ bottom: 20 })
           .backgroundColor('#FFFFFF')
           .borderRadius(20)
-          .onSubmit(() => {
-            hilog.info(0x0000, 'HomePage', 'Search triggered');
+          // 新增：点击整个搜索框区域触发跳转
+          .onClick(() => {
+            hilog.info(0x0000, 'HomePage', 'Search area clicked, jump to search page');
             this.goToPage('pages/BirdSearchPage');
           })
+          // 保留 onChange 事件（可选：如果需要在搜索页回显输入的内容）
           .onChange((value: string) => {
             this.searchValue = value;
-          })
+          });
 
         // 功能入口区域
         Column({ space: 16 }) {
@@ -313,7 +316,7 @@ export struct HomePage {
             .clickEffect({ level: ClickEffectLevel.MIDDLE })
             .onClick(() => {
               hilog.info(0x0000, 'HomePage', '❤️ Charity card clicked');
-              this.goToPage('pages/BirdConservationPage');  // 根据实际页面路由修改
+              this.goToPage('pages/BirdPublicWelfarePage');  // 根据实际页面路由修改
             })
           }
           .width('90%')

@@ -207,7 +207,7 @@ struct BirdCharityPage {
         .height(24)
         .fillColor('#333')
         .onClick(() => {
-          router.replaceUrl({ url: 'pages/HomePage' })
+          router.replaceUrl({ url: 'pages/BirdPublicWelfarePage' })
         })
 
       Text('鸟类公益')

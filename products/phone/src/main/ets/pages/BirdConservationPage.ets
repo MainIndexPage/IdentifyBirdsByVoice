@@ -10,7 +10,7 @@ interface VolunteerRole {
 @Component
 struct BirdConservationPage {
   @State activeTab: number = 0;   // 0科普 1资讯 2公益
-  private tabs: string[] = ['保护科普', '行业资讯', '公益入口'];
+  private tabs: string[] = ['保护科普', '行业资讯'];
 
   // ✅ 修改：改为 replaceUrl 跳转到首页，与你的首页跳转模式一致
   backToHome() {

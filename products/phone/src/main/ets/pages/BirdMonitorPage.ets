@@ -30,7 +30,7 @@ interface NavItem {
 @Entry
 @Component
 struct BirdMonitorPage {
-  @State currentNavIndex: number = 2 // 听音识鸟索引
+  @State currentNavIndex: number = -1
   @State selectedDevice: string = 'device_1'
   @State isRecording: boolean = false
   @State showDeviceList: boolean = false

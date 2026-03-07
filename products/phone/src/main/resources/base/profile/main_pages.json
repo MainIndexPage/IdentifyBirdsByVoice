@@ -14,6 +14,8 @@
     "pages/BirdRecognitionPage",
     "pages/SplashPage",
     "pages/BirdMonitorPage",
-    "pages/BirdCharityPage"
+    "pages/BirdCharityPage",
+    "pages/BirdPublicWelfarePage",
+    "pages/VolunteerApplicationPage"
   ]
 }
