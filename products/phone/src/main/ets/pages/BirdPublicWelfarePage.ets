@@ -20,7 +20,7 @@ struct BirdPublicWelfarePage {
   private navList: NavItem[] = [
     { name: '首页', icon: $r('app.media.nav_home'), route: 'pages/HomePage' },
     { name: '图鉴', icon: $r('app.media.nav_encyclopedia'), route: 'pages/BirdGallery' },
-    { name: '监控', icon: $r('app.media.nav_listen'), route: 'pages/BirdSoundRecognitionPage' },
+    { name: '听音识鸟', icon: $r('app.media.nav_listen'), route: 'pages/BirdSoundRecognitionPage' },
     { name: '社群', icon: $r('app.media.nav_community'), route: 'pages/BirdShare' },
     { name: '我的', icon: $r('app.media.nav_profile'), route: 'pages/ProfilePage' }
   ];
@@ -96,7 +96,6 @@ struct BirdPublicWelfarePage {
       .layoutWeight(1)
       .scrollBar(BarState.Off);
 
-      // 3. 底部导航栏（已改回“社群”）
       this.BottomBar();
     }
     .width('100%').height('100%')

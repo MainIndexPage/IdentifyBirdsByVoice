@@ -32,7 +32,7 @@ struct BirdDetailPage {
   @State postContent: string = ''
   @State selectedTags: string[] = []
 
-  @State currentNavIndex: number = 1
+  @State currentNavIndex: number = -1
   private navList: NavItem[] = [
     { name:'首页', icon:$r('app.media.nav_home'), route:'pages/HomePage' },
     { name:'图鉴', icon:$r('app.media.nav_encyclopedia'), route:'pages/BirdGallery' },

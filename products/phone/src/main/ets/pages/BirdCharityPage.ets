@@ -24,7 +24,7 @@ interface NavItem {
 @Entry
 @Component
 struct BirdCharityPage {
-  @State currentNavIndex: number = 0
+  @State currentNavIndex: number = -1
   @State searchKeyword: string = ''
   @State selectedRegion: string = '全部地区'
   @State selectedFocus: string = '全部领域'
@@ -37,7 +37,7 @@ struct BirdCharityPage {
   private navList: NavItem[] = [
     { name: '首页', icon: $r('app.media.nav_home'), route: 'pages/HomePage' },
     { name: '图鉴', icon: $r('app.media.nav_encyclopedia'), route: 'pages/BirdGallery' },
-    { name: '监控', icon: $r('app.media.nav_listen'), route: 'pages/BirdSoundRecognitionPage' },
+    { name: '听音识鸟', icon: $r('app.media.nav_listen'), route: 'pages/BirdSoundRecognitionPage' },
     { name: '公益', icon: $r('app.media.nav_community'), route: 'pages/BirdShare' },
     { name: '我的', icon: $r('app.media.nav_profile'), route: 'pages/ProfilePage' }
   ]
