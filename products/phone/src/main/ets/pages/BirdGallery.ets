@@ -1,6 +1,8 @@
-
 import router from '@ohos.router'
 import { Bird } from './BirdModel'
+import media from '@ohos.multimedia.media';
+import { common } from '@kit.AbilityKit';
+import promptAction from '@ohos.promptAction';
 
 /* 模拟图鉴数据库 */
 const BIRD_GALLERY: Bird[] = [
@@ -34,7 +36,6 @@ const BIRD_GALLERY: Bird[] = [
     poster: $r('app.media.Alcedo_atthis'),
     call: $r('app.media.voice')
   },
-  // 新增鸟类
   {
     id: '4',
     nameZh: '朱鹮',
@@ -147,6 +148,10 @@ struct BirdGalleryPage {
   @State list: Bird[] = BIRD_GALLERY
   @State filteredList: Bird[] = BIRD_GALLERY
   @State currentNavIndex: number = 1
+  @State currentPlayingId: string = '';
+
+  private avPlayer: media.AVPlayer | undefined = undefined;
+
   /* 筛选状态 */
   @State selectedFamily: string = '全部'
   @State selectedProtection: string = '全部'
@@ -185,6 +190,90 @@ struct BirdGalleryPage {
     this.selectedProtection = '全部'
     this.applyFilter()
   }
+
+  /* ==================== 核心修复：音频播放逻辑 ==================== */
+  private async playBirdCall(bird: Bird) {
+    if (bird.id !== '1') {
+      promptAction.showToast({ message: `${bird.nameZh}的叫声正在收录中...` });
+      return;
+    }
+
+    // 1. 如果正在播放这只鸟，切换暂停/播放
+    if (this.currentPlayingId === bird.id && this.avPlayer) {
+      let currentState = this.avPlayer.state;
+      if (currentState === 'playing') {
+        await this.avPlayer.pause();
+        promptAction.showToast({ message: '暂停' });
+      } else if (currentState === 'paused') {
+        await this.avPlayer.play();
+        promptAction.showToast({ message: '继续播放' });
+      }
+      return;
+    }
+
+    // 2. 释放之前的播放器
+    await this.cleanupPlayer();
+
+    try {
+      const context = getContext(this) as common.UIAbilityContext;
+
+      // 3. 先获取文件描述符 (确保文件名正确)
+      const fileName = 'Urocissa_erythrorynchaMp3.mp3';
+      const fd = await context.resourceManager.getRawFileDescriptor(fileName);
+
+      // 4. 创建播放器
+      this.avPlayer = await media.createAVPlayer();
+
+      // 5. 先绑定状态监听
+      this.avPlayer.on('stateChange', async (state) => {
+        console.info('AVPlayer State:', state);
+        if (state === 'initialized') {
+          await this.avPlayer?.prepare();
+        } else if (state === 'prepared') {
+          this.currentPlayingId = bird.id;
+          await this.avPlayer?.play();
+          promptAction.showToast({ message: '开始播放' });
+        } else if (state === 'completed') {
+          promptAction.showToast({ message: '播放完毕' });
+          this.cleanupPlayer();
+        }
+      });
+
+      this.avPlayer.on('error', (err) => {
+        console.error('Playback Error:', JSON.stringify(err));
+        promptAction.showToast({ message: '播放出错' });
+        this.cleanupPlayer();
+      });
+
+      // 6. 直接设置音源 (关键步骤，不要等回调)
+      console.info('Setting fdSrc...');
+      this.avPlayer.fdSrc = fd;
+
+    } catch (e) {
+      console.error('Init Error:', JSON.stringify(e));
+      promptAction.showToast({ message: '未找到音频文件，请检查 rawfile 目录' });
+      this.cleanupPlayer();
+    }
+  }
+
+  // 清理播放器资源
+  private async cleanupPlayer() {
+    this.currentPlayingId = '';
+    if (this.avPlayer) {
+      try {
+        await this.avPlayer.release();
+      } catch (e) {
+        // 忽略释放错误
+      }
+      this.avPlayer = undefined;
+    }
+  }
+
+  // 页面销毁时释放
+  aboutToDisappear() {
+    this.cleanupPlayer();
+  }
+  /* ==================== 音频逻辑结束 ==================== */
 
   private navClick(index: number) {
     if (index === this.currentNavIndex) return
@@ -251,15 +340,12 @@ struct BirdGalleryPage {
       .padding({ left: 16, right: 16, bottom: 8 })
       .justifyContent(FlexAlign.SpaceBetween)
 
-      /* 图鉴列表 */
+      /* 图鉴列表 (已移除 ListItem 的 onClick) */
       List({ space: 12 }) {
         ForEach(this.filteredList, (bird: Bird) => {
           ListItem() {
             this.BirdRow(bird)
           }
-          .onClick(() => {
-            router.pushUrl({ url: 'pages/BirdDetail', params: { bird } })
-          })
         })
       }
       .layoutWeight(1)
@@ -364,46 +450,61 @@ struct BirdGalleryPage {
     .borderRadius(12)
   }
 
-  /* 单行 UI */
+  /* ==================== 核心修复：单行 UI (点击事件分离) ==================== */
   @Builder
   BirdRow(bird: Bird) {
     Row({ space: 12 }) {
-      Image(bird.poster)
-        .width(80)
-        .height(80)
-        .borderRadius(8)
-        .objectFit(ImageFit.Cover)
+      // 左侧：图片+文字区域 (负责跳转)
+      Row({ space: 12 }) {
+        Image(bird.poster)
+          .width(80)
+          .height(80)
+          .borderRadius(8)
+          .objectFit(ImageFit.Cover)
 
-      Column({ space: 4 }) {
-        Text(bird.nameZh)
-          .fontSize(16)
-          .fontWeight(FontWeight.Medium)
-        Text(bird.nameLatin)
-          .fontSize(12)
-          .fontColor('#666')
-        Row({ space: 6 }) {
-          this.Tag(bird.family)
-          this.Tag(bird.habitat)
-          this.ProtectionTag(bird.protection)
+        Column({ space: 4 }) {
+          Text(bird.nameZh)
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+          Text(bird.nameLatin)
+            .fontSize(12)
+            .fontColor('#666')
+          Row({ space: 6 }) {
+            this.Tag(bird.family)
+            this.Tag(bird.habitat)
+            this.ProtectionTag(bird.protection)
+          }
         }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
       }
       .layoutWeight(1)
+      .onClick(() => {
+        // 点击左侧区域才跳转
+        router.pushUrl({ url: 'pages/BirdDetail', params: { bird } })
+      })
 
-      /* 播放叫声占位按钮 */
-      Image($r('app.media.voice'))
-        .width(24)
-        .height(24)
-        .fillColor('#4CAF50')
-        .onClick((e: ClickEvent) => {
-          // TODO: 播放音频逻辑
-        })
+      // 右侧：喇叭区域 (负责播放)
+      Stack() {
+        Image($r('app.media.voice'))
+          .width(24)
+          .height(24)
+          // 播放中改变颜色
+          .fillColor(this.currentPlayingId === bird.id ? '#FF5722' : '#4CAF50')
+      }
+      .width(40)
+      .height(40)
+      .onClick(() => {
+        // 点击右侧区域只播放
+        this.playBirdCall(bird);
+      })
     }
     .padding(12)
     .backgroundColor('#FFFFFF')
     .borderRadius(12)
   }
 
-  /* 保护等级专用标签（不同颜色）- 使用三元表达式 */
+  /* 保护等级专用标签 */
   @Builder
   ProtectionTag(text: string) {
     Text(text)
