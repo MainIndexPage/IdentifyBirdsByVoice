@@ -87,7 +87,7 @@ export struct HomePage {
       // 第二层：内容区域
       Column() {
         // 顶部标题
-        Text('首页')
+        Text('听音识鸟')
           .fontSize(24)
           .fontWeight(FontWeight.Bold)
           .fontColor('#4CAF50')

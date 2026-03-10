@@ -18,6 +18,21 @@ interface NavItem {
   route: string
 }
 
+/* ================== 新增：好友数据模型 ================== */
+interface Friend {
+  id: number
+  name: string
+  avatar: string
+}
+
+/* ================== 新增：活动数据模型 ================== */
+interface Activity {
+  id: number
+  title: string
+  time: string
+  location: string
+}
+
 @Entry
 @Component
 struct ProfilePage {
@@ -33,6 +48,20 @@ struct ProfilePage {
     {id:3, title:'红嘴蓝鹊-2025-12-28', time:'07:05', tag:'林栖'},
   ]
 
+  /* -------------- 新增：好友列表状态 -------------- */
+  @State friendList: Friend[] = [
+    {id:1, name:'鸟友小李', avatar:''},
+    {id:2, name:'观鸟达人', avatar:''},
+    {id:3, name:'林间漫步', avatar:''},
+    {id:4, name:'羽翼观察者', avatar:''},
+  ]
+
+  /* -------------- 新增：活动列表状态 -------------- */
+  @State activityList: Activity[] = [
+    {id:1, title:'春季候鸟观测活动', time:'2025-03-15 06:00', location:'浦东新区世纪公园'},
+    {id:2, title:'校园观鸟科普展', time:'2025-03-20 14:00', location:'复旦大学'},
+  ]
+
   /* -------------- 底部导航 -------------- */
   private navList: NavItem[] = [
     { name:'首页', icon:$r('app.media.nav_home'), route:'pages/HomePage' },
@@ -43,9 +72,9 @@ struct ProfilePage {
   ]
   @State currentNavIndex: number = 4   // 当前页高亮
 
-  /* -------------- 跳转 -------------- */
+  /* -------------- 跳转 (修复了原逻辑，现在会使用传入的 path) -------------- */
   private jump(path: string) {
-    router.replaceUrl({ url: TARGET_NAME })
+    router.replaceUrl({ url: path })
   }
 
   /* -------------- 底部栏Builder -------------- */
@@ -141,7 +170,57 @@ struct ProfilePage {
             }
             .width('100%').padding(16).backgroundColor('#FFFFFF').borderRadius(12)
 
-            /* 4. 系统设置 */
+            /* ================== 新增：4. 好友展示 ================== */
+            Column(){
+              Row(){
+                Text('好友').fontSize(16).fontColor('#333').fontWeight(FontWeight.Medium)
+                Blank()
+                Text('全部').fontSize(14).fontColor('#4CAF50')
+                  .onClick(()=>this.jump('pages/FriendListPage'))
+              }.padding({bottom:8})
+              Row({ space: 12 }){
+                ForEach(this.friendList, (f:Friend)=>{
+                  Column(){
+                    Stack(){
+                      if(f.avatar){
+                        Image(f.avatar).width(48).height(48).borderRadius(24)
+                      }else{
+                        Text(f.name.substr(0,1)).fontSize(20).fontColor('#FFFFFF')
+                      }
+                    }
+                    .width(48).height(48).borderRadius(24).backgroundColor('#81C784')
+                    .alignContent(Alignment.Center)
+                    Text(f.name).fontSize(12).fontColor('#666').margin({top:4})
+                  }
+                  .onClick(()=>this.jump(`pages/FriendDetailPage?id=${f.id}`))
+                })
+              }
+            }
+            .width('100%').padding(16).backgroundColor('#FFFFFF').borderRadius(12)
+
+            /* ================== 新增：5. 活动展示 ================== */
+            Column(){
+              Row(){
+                Text('活动').fontSize(16).fontColor('#333').fontWeight(FontWeight.Medium)
+                Blank()
+                Text('全部').fontSize(14).fontColor('#4CAF50')
+                  .onClick(()=>this.jump('pages/ActivityListPage'))
+              }.padding({bottom:8})
+              ForEach(this.activityList, (a:Activity)=>{
+                Row(){
+                  Column(){
+                    Text(a.title).fontSize(14).fontColor('#333')
+                    Text(`${a.time} · ${a.location}`).fontSize(12).fontColor('#999').margin({top:2})
+                  }.layoutWeight(1)
+                  SymbolGlyph($r('sys.symbol.chevron_right')).fontSize(16)
+                }
+                .width('100%').padding({top:8, bottom:8})
+                .onClick(()=>this.jump(`pages/ActivityDetailPage?id=${a.id}`))
+              })
+            }
+            .width('100%').padding(16).backgroundColor('#FFFFFF').borderRadius(12)
+
+            /* 6. 系统设置 (序号顺延) */
             List(){
               ListItem(){ this.cell('隐私政策', 'pages/PrivacyPage') }
               ListItem(){ this.cell('通知设置', 'pages/NotifySettingPage') }
