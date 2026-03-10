@@ -9,7 +9,9 @@ interface MonitorDevice {
   status: 'online' | 'offline' | 'recording'
   lastActive: string
   todayCount: number
-  image: Resource
+  videoUrl: string | Resource
+  poster: Resource
+  isPlaying: boolean
 }
 
 interface DetectionRecord {
@@ -35,6 +37,7 @@ struct BirdMonitorPage {
   @State isRecording: boolean = false
   @State showDeviceList: boolean = false
   @State detectionRecords: DetectionRecord[] = this.mockRecords()
+  @State videoFullscreen: boolean = false
 
   private navList: NavItem[] = [
     { name: '首页', icon: $r('app.media.nav_home'), route: 'pages/HomePage' },
@@ -52,7 +55,9 @@ struct BirdMonitorPage {
       status: 'recording',
       lastActive: '刚刚',
       todayCount: 23,
-      image: $r('app.media.monitor_1')
+      videoUrl: $rawfile('bird.mp4'),
+      poster: $r('app.media.monitor_1'),
+      isPlaying: true
     },
     {
       id: 'device_2',
@@ -61,7 +66,9 @@ struct BirdMonitorPage {
       status: 'online',
       lastActive: '2分钟前',
       todayCount: 156,
-      image: $r('app.media.monitor_2')
+      videoUrl: 'https://your-domain.com/live/poyang-lake-01.m3u8',
+      poster: $r('app.media.monitor_2'),
+      isPlaying: false
     },
     {
       id: 'device_3',
@@ -70,7 +77,9 @@ struct BirdMonitorPage {
       status: 'online',
       lastActive: '5分钟前',
       todayCount: 89,
-      image: $r('app.media.monitor_3')
+      videoUrl: 'https://your-domain.com/live/qinghai-lake-01.m3u8',
+      poster: $r('app.media.monitor_3'),
+      isPlaying: false
     },
     {
       id: 'device_4',
@@ -79,7 +88,9 @@ struct BirdMonitorPage {
       status: 'offline',
       lastActive: '2小时前',
       todayCount: 0,
-      image: $r('app.media.monitor_4')
+      videoUrl: 'https://your-domain.com/live/chongming-dongtan-01.m3u8',
+      poster: $r('app.media.monitor_4'),
+      isPlaying: false
     }
   ]
 
@@ -90,12 +101,10 @@ struct BirdMonitorPage {
     this.currentNavIndex = index
   }
 
-  /* 获取当前设备 */
   private getCurrentDevice(): MonitorDevice {
     return this.devices.find(d => d.id === this.selectedDevice) || this.devices[0]
   }
 
-  /* 获取状态颜色 */
   private getStatusColor(status: string): string {
     switch (status) {
       case 'recording': return '#FF4444'
@@ -105,7 +114,6 @@ struct BirdMonitorPage {
     }
   }
 
-  /* 获取状态文字 */
   private getStatusText(status: string): string {
     switch (status) {
       case 'recording': return '识别中'
@@ -115,24 +123,62 @@ struct BirdMonitorPage {
     }
   }
 
+  private onDeviceChange(newDeviceId: string) {
+    this.devices = this.devices.map(d => {
+      const newDevice: MonitorDevice = {
+        id: d.id,
+        name: d.name,
+        location: d.location,
+        status: d.status,
+        lastActive: d.lastActive,
+        todayCount: d.todayCount,
+        videoUrl: d.videoUrl,
+        poster: d.poster,
+        isPlaying: d.id === newDeviceId && d.status !== 'offline'
+      }
+      return newDevice
+    })
+    this.selectedDevice = newDeviceId
+  }
+
+  private toggleVideoPlay() {
+    const currentDevice = this.getCurrentDevice()
+    if (currentDevice.status === 'offline') {
+      promptAction.showToast({ message: '设备离线，无法播放' })
+      return
+    }
+    const newPlayingState = !currentDevice.isPlaying
+    this.devices = this.devices.map(d => {
+      if (d.id === currentDevice.id) {
+        const updatedDevice: MonitorDevice = {
+          id: d.id,
+          name: d.name,
+          location: d.location,
+          status: d.status,
+          lastActive: d.lastActive,
+          todayCount: d.todayCount,
+          videoUrl: d.videoUrl,
+          poster: d.poster,
+          isPlaying: newPlayingState
+        }
+        return updatedDevice
+      }
+      return d
+    })
+    promptAction.showToast({
+      message: newPlayingState ? '开始播放' : '已暂停'
+    })
+  }
+
   build() {
     Column() {
-      /* 顶部标题栏 */
       this.TopBar()
 
-      /* 主内容区 */
       Scroll() {
         Column({ space: 12 }) {
-          /* 监控画面区域 */
           this.MonitorView()
-
-          /* 设备切换栏 */
           this.DeviceSelector()
-
-          /* 实时识别记录 */
           this.DetectionList()
-
-          /* 统计信息 */
           this.StatsCard()
         }
         .padding({ left: 16, right: 16, bottom: 16 })
@@ -147,7 +193,6 @@ struct BirdMonitorPage {
     .backgroundColor('#0A0A0A')
   }
 
-  /* -------------------- 顶部栏 -------------------- */
   @Builder
   TopBar() {
     Row() {
@@ -166,7 +211,6 @@ struct BirdMonitorPage {
         .layoutWeight(1)
         .textAlign(TextAlign.Center)
 
-      /* 录制按钮 */
       Stack() {
         Circle()
           .width(this.isRecording ? 48 : 40)
@@ -196,27 +240,71 @@ struct BirdMonitorPage {
     .backgroundColor('#1A1A1A')
   }
 
-  /* -------------------- 监控画面 -------------------- */
   @Builder
   MonitorView() {
     Column() {
-      /* 模拟监控画面 */
       Stack() {
-        /* 背景图/视频流 */
-        Image(this.getCurrentDevice().image)
+        // 封面图 - 未播放时显示
+        if (!this.getCurrentDevice().isPlaying || this.getCurrentDevice().status === 'offline') {
+          Image(this.getCurrentDevice().poster)
+            .width('100%')
+            .height(this.videoFullscreen ? '100%' : 220)
+            .objectFit(ImageFit.Cover)
+            .borderRadius(12)
+        }
+
+        // 视频播放器 - 支持 Resource 类型
+        Video({
+          src: this.getCurrentDevice().videoUrl  // 可以是 string 或 Resource
+        })
+          .id('mainVideo')
           .width('100%')
-          .height(220)
+          .height(this.videoFullscreen ? '100%' : 220)
           .objectFit(ImageFit.Cover)
           .borderRadius(12)
+          .autoPlay(this.getCurrentDevice().isPlaying)
+          .loop(true)
+          .muted(false)
+          .controls(false)
+          .onPrepared((event) => {
+            console.info('Video prepared, duration: ' + event.duration)
+          })
+          .onError((error) => {
+            console.error('Video error: ' + JSON.stringify(error))
+            promptAction.showToast({ message: '视频加载失败' })
+          })
+          .onClick(() => {
+            this.toggleVideoPlay()
+          })
+          // 未播放或离线时隐藏视频（显示封面）
+          .opacity(this.getCurrentDevice().isPlaying && this.getCurrentDevice().status !== 'offline' ? 1 : 0)
 
-        /* 暗色遮罩 */
-        Column()
+        // 离线遮罩
+        if (this.getCurrentDevice().status === 'offline') {
+          Column() {
+            Image($r('app.media.ic_offline'))
+              .width(48)
+              .height(48)
+              .fillColor('#FFFFFF')
+
+            Text('设备离线')
+              .fontSize(14)
+              .fontColor('#FFFFFF')
+              .margin({ top: 8 })
+
+            Text('连接中断，请稍后重试')
+              .fontSize(12)
+              .fontColor('#999999')
+              .margin({ top: 4 })
+          }
           .width('100%')
           .height(220)
-          .backgroundColor('rgba(0,0,0,0.2)')
+          .backgroundColor('rgba(0,0,0,0.7)')
           .borderRadius(12)
+          .justifyContent(FlexAlign.Center)
+        }
 
-        /* 左上角状态标识 */
+        // 状态标识
         Row({ space: 6 }) {
           Circle()
             .width(8)
@@ -238,7 +326,25 @@ struct BirdMonitorPage {
         .borderRadius(4)
         .position({ x: 12, y: 12 })
 
-        /* 右上角时间 */
+        // 播放按钮
+        if (!this.getCurrentDevice().isPlaying && this.getCurrentDevice().status !== 'offline') {
+          Column() {
+            Image($r('app.media.ic_play'))
+              .width(48)
+              .height(48)
+              .fillColor('#FFFFFF')
+          }
+          .width(64)
+          .height(64)
+          .backgroundColor('rgba(0,0,0,0.5)')
+          .borderRadius(32)
+          .justifyContent(FlexAlign.Center)
+          .onClick(() => {
+            this.toggleVideoPlay()
+          })
+        }
+
+        // 时间
         Text(this.getCurrentTime())
           .fontSize(12)
           .fontColor('#FFFFFF')
@@ -247,7 +353,7 @@ struct BirdMonitorPage {
           .borderRadius(4)
           .position({ x: '72%', y: 12 })
 
-        /* 底部信息栏 */
+        // 底部信息
         Column({ space: 4 }) {
           Text(this.getCurrentDevice().name)
             .fontSize(14)
@@ -263,54 +369,70 @@ struct BirdMonitorPage {
         .alignItems(HorizontalAlign.Start)
         .position({ y: 164 })
         .backgroundColor('linearGradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%)')
+
+        // 全屏按钮
+        Row() {
+          Image($r('app.media.ic_fullscreen'))
+            .width(20)
+            .height(20)
+            .fillColor('#FFFFFF')
+        }
+        .width(36)
+        .height(36)
+        .backgroundColor('rgba(0,0,0,0.5)')
+        .borderRadius(18)
+        .position({ x: '88%', y: 178 })
+        .justifyContent(FlexAlign.Center)
+        .onClick(() => {
+          this.videoFullscreen = !this.videoFullscreen
+          promptAction.showToast({
+            message: this.videoFullscreen ? '全屏模式' : '退出全屏'
+          })
+        })
       }
       .width('100%')
-      .height(220)
+      .height(this.videoFullscreen ? '100%' : 220)
       .borderRadius(12)
 
-      /* AI识别框 - 模拟 */
       if (this.getCurrentDevice().status === 'recording') {
-        this.AiDetectionBox()
+        // this.AiDetectionBox()
       }
     }
+    .height(this.videoFullscreen ? '100%' : 'auto')
   }
+  // @Builder
+  // AiDetectionBox() {
+  //   Row() {
+  //     // Column({ space: 2 }) {
+  //     //   Text('黑脸琵鹭')
+  //     //     .fontSize(12)
+  //     //   Text('置信度: 98.5%')
+  //     //     .fontSize(10)
+  //     //     .fontColor('rgba(255,255,255,0.8)')
+  //     // }
+  //     // .padding(6)
+  //     // .backgroundColor('rgba(76,175,80,0.9)')
+  //     // .borderRadius(4)
+  //
+  //     // Column()
+  //     //   .width(120)
+  //     //   .height(2)
+  //     //   .backgroundColor('#4CAF50')
+  //     //   .position({ y: 0 })
+  //     //   .animation({
+  //     //     duration: 2000,
+  //     //     iterations: -1,
+  //     //     playMode: PlayMode.Alternate,
+  //     //     curve: Curve.Linear
+  //     //   })
+  //   }
+  //   .width(120)
+  //   .height(80)
+  //   .border({ width: 2, color: '#4CAF50' })
+  //   .borderRadius(4)
+  //   .position({ x: '40%', y: 80 })
+  // }
 
-  /* AI识别框动画 */
-  @Builder
-  AiDetectionBox() {
-    Row() {
-      Column({ space: 2 }) {
-        Text('黑脸琵鹭')
-          .fontSize(12)
-        Text('置信度: 98.5%')
-          .fontSize(10)
-          .fontColor('rgba(255,255,255,0.8)')
-      }
-      .padding(6)
-      .backgroundColor('rgba(76,175,80,0.9)')
-      .borderRadius(4)
-
-      /* 扫描线动画 */
-      Column()
-        .width(120)
-        .height(2)
-        .backgroundColor('#4CAF50')
-        .position({ y: 0 })
-        .animation({
-          duration: 2000,
-          iterations: -1,
-          playMode: PlayMode.Alternate,
-          curve: Curve.Linear
-        })
-    }
-    .width(120)
-    .height(80)
-    .border({ width: 2, color: '#4CAF50' })
-    .borderRadius(4)
-    .position({ x: '40%', y: 80 })
-  }
-
-  /* -------------------- 设备选择器 -------------------- */
   @Builder
   DeviceSelector() {
     Column({ space: 8 }) {
@@ -339,14 +461,12 @@ struct BirdMonitorPage {
       }
       .width('100%')
 
-      /* 设备列表 */
       if (this.showDeviceList) {
         Column({ space: 8 }) {
           ForEach(this.devices, (device: MonitorDevice) => {
             Row({ space: 12 }) {
-              /* 缩略图 */
               Stack() {
-                Image(device.image)
+                Image(device.poster)
                   .width(60)
                   .height(45)
                   .borderRadius(6)
@@ -358,6 +478,12 @@ struct BirdMonitorPage {
                     .height(45)
                     .backgroundColor('rgba(0,0,0,0.5)')
                     .borderRadius(6)
+                } else if (device.isPlaying) {
+                  Image($r('app.media.ic_playing'))
+                    .width(16)
+                    .height(16)
+                    .fillColor('#4CAF50')
+                    .position({ x: 22, y: 14 })
                 }
               }
 
@@ -397,7 +523,7 @@ struct BirdMonitorPage {
             .backgroundColor(this.selectedDevice === device.id ? 'rgba(76,175,80,0.1)' : 'rgba(255,255,255,0.05)')
             .borderRadius(8)
             .onClick(() => {
-              this.selectedDevice = device.id
+              this.onDeviceChange(device.id)
               this.showDeviceList = false
               promptAction.showToast({ message: `已切换至: ${device.name}` })
             })
@@ -410,12 +536,11 @@ struct BirdMonitorPage {
         .animation({ duration: 300 })
       }
 
-      /* 当前设备快捷信息 */
       Row({ space: 12 }) {
         ForEach(this.devices.slice(0, 3), (device: MonitorDevice) => {
           Column({ space: 4 }) {
             Stack() {
-              Image(device.image)
+              Image(device.poster)
                 .width(80)
                 .height(60)
                 .borderRadius(8)
@@ -433,7 +558,6 @@ struct BirdMonitorPage {
                   .borderRadius(8)
               }
 
-              /* 状态点 */
               Circle()
                 .width(8)
                 .height(8)
@@ -450,7 +574,7 @@ struct BirdMonitorPage {
           }
           .onClick(() => {
             if (this.selectedDevice !== device.id) {
-              this.selectedDevice = device.id
+              this.onDeviceChange(device.id)
               promptAction.showToast({ message: `已切换: ${device.name}` })
             }
           })
@@ -460,7 +584,6 @@ struct BirdMonitorPage {
     }
   }
 
-  /* -------------------- 识别记录列表 -------------------- */
   @Builder
   DetectionList() {
     Column({ space: 12 }) {
@@ -473,7 +596,6 @@ struct BirdMonitorPage {
         Blank()
 
         Row({ space: 4 }) {
-          /* 实时指示器 */
           Row({ space: 4 }) {
             Circle()
               .width(6)
@@ -501,11 +623,9 @@ struct BirdMonitorPage {
       }
       .width('100%')
 
-      /* 记录列表 */
       Column({ space: 8 }) {
         ForEach(this.detectionRecords.slice(0, 5), (record: DetectionRecord, index: number) => {
           Row({ space: 12 }) {
-            /* 序号/时间 */
             Column() {
               Text(`${index + 1}`)
                 .fontSize(14)
@@ -514,7 +634,6 @@ struct BirdMonitorPage {
             }
             .width(24)
 
-            /* 鸟类图片 */
             Image(record.image)
               .width(50)
               .height(50)
@@ -528,7 +647,6 @@ struct BirdMonitorPage {
                   .fontColor('#FFFFFF')
                   .fontWeight(FontWeight.Medium)
 
-                /* 置信度标签 */
                 Text(`${record.confidence}%`)
                   .fontSize(10)
                   .fontColor(record.confidence > 90 ? '#4CAF50' : '#FFA726')
@@ -559,7 +677,6 @@ struct BirdMonitorPage {
             .layoutWeight(1)
             .alignItems(HorizontalAlign.Start)
 
-            /* 查看按钮 */
             Image($r('app.media.ic_arrow_right'))
               .width(16)
               .height(16)
@@ -581,7 +698,6 @@ struct BirdMonitorPage {
     }
   }
 
-  /* -------------------- 统计卡片 -------------------- */
   @Builder
   StatsCard() {
     Column({ space: 12 }) {
@@ -592,7 +708,6 @@ struct BirdMonitorPage {
         .width('100%')
 
       Row({ space: 12 }) {
-        /* 识别总数 */
         Column({ space: 4 }) {
           Text('156')
             .fontSize(28)
@@ -608,7 +723,6 @@ struct BirdMonitorPage {
         .backgroundColor('rgba(76,175,80,0.1)')
         .borderRadius(12)
 
-        /* 物种数 */
         Column({ space: 4 }) {
           Text('23')
             .fontSize(28)
@@ -624,7 +738,6 @@ struct BirdMonitorPage {
         .backgroundColor('rgba(33,150,243,0.1)')
         .borderRadius(12)
 
-        /* 在线设备 */
         Column({ space: 4 }) {
           Text('3/4')
             .fontSize(28)
@@ -642,7 +755,6 @@ struct BirdMonitorPage {
       }
       .width('100%')
 
-      /* 时段分布图 - 简化版 */
       Column({ space: 8 }) {
         Text('识别时段分布')
           .fontSize(12)
@@ -684,7 +796,6 @@ struct BirdMonitorPage {
     .width('100%')
   }
 
-  /* -------------------- 底部导航 -------------------- */
   @Builder
   BottomBar() {
     Row() {
@@ -711,7 +822,6 @@ struct BirdMonitorPage {
     .border({ width: { top: 1 }, color: '#333333' })
   }
 
-  /* -------------------- 工具方法 -------------------- */
   private getCurrentTime(): string {
     const now = new Date()
     const hours = now.getHours().toString().padStart(2, '0')
