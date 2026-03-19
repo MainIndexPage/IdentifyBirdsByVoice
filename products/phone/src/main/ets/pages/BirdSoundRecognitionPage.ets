@@ -47,7 +47,7 @@ struct BirdSoundRecognitionPage {
   private navItems: NavItem[] = [
     { name: '首页', icon: $r('app.media.nav_home'), route: 'pages/HomePage' },
     { name: '图鉴', icon: $r('app.media.nav_encyclopedia'), route: 'pages/BirdGallery' },
-    { name: '听音识鸟', icon: $r('app.media.nav_listen'), route: 'pages/BirdSoundRecognitionPage' },
+    { name: '林声识羽', icon: $r('app.media.nav_listen'), route: 'pages/BirdSoundRecognitionPage' },
     { name: '社群', icon: $r('app.media.nav_community'), route: 'pages/BirdShare' },
     { name: '我的', icon: $r('app.media.nav_profile'), route: 'pages/ProfilePage' }
   ];
@@ -301,7 +301,7 @@ struct BirdSoundRecognitionPage {
       Scroll() {
         Column({ space: 20 }) {
           Column() {
-            Text('听音识鸟')
+            Text('林声识羽')
               .fontSize(24)
               .fontWeight(FontWeight.Bold)
               .fontColor('#333333')
