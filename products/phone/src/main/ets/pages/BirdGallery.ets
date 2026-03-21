@@ -3,6 +3,7 @@ import { Bird } from './BirdModel'
 import media from '@ohos.multimedia.media';
 import { common } from '@kit.AbilityKit';
 import promptAction from '@ohos.promptAction';
+import { BirdApiItem, BirdBackendService, mapCallResource, mapPosterResource } from '../services/BirdBackendService'
 
 /* 模拟图鉴数据库 */
 const BIRD_GALLERY: Bird[] = [
@@ -158,8 +159,8 @@ struct BirdGalleryPage {
   @State showFilterPanel: boolean = false
 
   /* 筛选选项 */
-  private familyOptions: string[] = ['全部', '鸦科', '鹮科', '翠鸟科', '鸭科', '雉科', '鹤科', '鹳科']
-  private protectionOptions: string[] = ['全部', '一级', '二级', '三有']
+  @State familyOptions: string[] = ['全部', '鸦科', '鹮科', '翠鸟科', '鸭科', '雉科', '鹤科', '鹳科']
+  @State protectionOptions: string[] = ['全部', '一级', '二级', '三有']
   private navList: NavItem[] = [
     { name:'首页', icon:$r('app.media.nav_home'), route:'pages/HomePage' },
     { name:'图鉴', icon:$r('app.media.nav_encyclopedia'), route:'pages/BirdGallery' },
@@ -189,6 +190,52 @@ struct BirdGalleryPage {
     this.selectedFamily = '全部'
     this.selectedProtection = '全部'
     this.applyFilter()
+  }
+  aboutToAppear(): void {
+    this.loadBirdsFromApi()
+  }
+
+  private async loadBirdsFromApi(): Promise<void> {
+    try {
+      const remoteBirds: BirdApiItem[] = await BirdBackendService.fetchBirds()
+      if (remoteBirds.length === 0) {
+        return
+      }
+
+      const birds: Bird[] = remoteBirds.map((item: BirdApiItem) => {
+        const mappedBird: Bird = {
+          id: String(item.birdId),
+          nameZh: item.birdNameZh,
+          nameLatin: item.birdNameLatin,
+          family: item.birdFamily,
+          habitat: item.birdHabitat,
+          protection: item.birdProtection,
+          poster: mapPosterResource(item.birdPoster),
+          call: mapCallResource(item.birdCall)
+        }
+        return mappedBird
+      })
+
+      this.list = birds
+      this.filteredList = birds
+
+      const familySet: Set<string> = new Set<string>()
+      const protectionSet: Set<string> = new Set<string>()
+      birds.forEach((bird: Bird) => {
+        if (bird.family) {
+          familySet.add(bird.family)
+        }
+        if (bird.protection) {
+          protectionSet.add(bird.protection)
+        }
+      })
+
+      this.familyOptions = ['全部', ...Array.from(familySet)]
+      this.protectionOptions = ['全部', ...Array.from(protectionSet)]
+      this.applyFilter()
+    } catch (_e) {
+      promptAction.showToast({ message: '\u56FE\u9274\u52A0\u8F7D\u5931\u8D25\uFF0C\u5DF2\u4F7F\u7528\u672C\u5730\u515C\u5E95\u6570\u636E' })
+    }
   }
 
   /* ==================== 核心修复：音频播放逻辑 ==================== */
@@ -481,7 +528,7 @@ struct BirdGalleryPage {
       .layoutWeight(1)
       .onClick(() => {
         // 点击左侧区域才跳转
-        router.pushUrl({ url: 'pages/BirdDetail', params: { bird } })
+        router.pushUrl({ url: 'pages/BirdDetail', params: { birdId: Number(bird.id) } })
       })
 
       // 右侧：喇叭区域 (负责播放)

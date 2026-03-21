@@ -83,7 +83,7 @@ struct BirdSearchPage {
 
   // 跳转详情（仅传递 id）
   goDetail(bird: Bird){
-    router.push({ url:'pages/BirdDetailPage', params:{id:bird.id} })
+    router.push({ url:'pages/BirdDetail', params:{ birdId: bird.id } })
   }
 
   build() {
