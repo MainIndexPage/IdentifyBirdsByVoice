@@ -2,6 +2,7 @@
 import router from '@ohos.router'
 import promptAction from '@ohos.promptAction'
 import { TARGET_NAME } from 'BuildProfile'
+import { BirdBackendService } from '../services/BirdBackendService'
 
 /* ================== 数据模型 ================== */
 interface Record {
@@ -231,6 +232,16 @@ struct ProfilePage {
             .divider({ strokeWidth: 0.5, color: '#E0E0E0' })
             .padding({ left: 16, right: 16 })
             .edgeEffect(EdgeEffect.None)
+
+            Button('退出登录')
+              .width('100%')
+              .height(44)
+              .backgroundColor('#FFFFFF')
+              .borderRadius(10)
+              .fontSize(15)
+              .fontColor('#E53935')
+              .margin({ top: 12 })
+              .onClick(() => this.logout())
           }
           .padding({ left: 16, right: 16, top: 0, bottom: 32 })
         }
@@ -263,5 +274,26 @@ struct ProfilePage {
     }
     .width('100%').padding({ top: 14, bottom: 14 })
     .onClick(()=>this.jump(path))
+  }
+
+  private async logout() {
+    try {
+      const result = await promptAction.showDialog({
+        title: '退出登录',
+        message: '确定要退出当前账号吗？',
+        buttons: [
+          { text: '取消', color: '#666666' },
+          { text: '退出', color: '#E53935' }
+        ]
+      })
+      if (result.index !== 1) {
+        return
+      }
+    } catch (_e) {
+      return
+    }
+
+    BirdBackendService.clearAuthToken()
+    router.replaceUrl({ url: 'pages/BirdLogin' })
   }
 }

@@ -1,185 +1,108 @@
 import { prompt } from '@kit.ArkUI'
 import router from '@ohos.router'
+import { BirdBackendService, LoginPayload, LoginResult } from '../services/BirdBackendService'
+
 @Entry
 @Component
-struct LoginPage {
-  // 定义状态变量：账号、密码、密码是否隐藏、表单错误提示
-  @State account: string = ''
+struct BirdLogin {
+  @State phone: string = ''
   @State password: string = ''
-  @State isPwdHidden: boolean = true
   @State errorTip: string = ''
 
   build() {
     Column() {
-      // 1. 页面标题
       Text('用户登录')
         .fontSize(30)
         .fontWeight(FontWeight.Bold)
-        .margin({ top: 120, bottom: 80 })
+        .margin({ top: 120, bottom: 60 })
         .fontColor('#181818')
 
-      // 2. 账号输入框
-      Stack({ alignContent: Alignment.Start }) {
-        Image($r('app.media.user')) // 可替换为自有账号图标
-          .width(24)
-          .height(24)
-          .margin({ left: 16 })
-          .fillColor('#666666')
-
-        TextInput({ placeholder: '请输入手机号/账号' })
-
-          .width('100%')
-          .height(56)
-          .padding({ left: 56, right: 16 })
-          .backgroundColor(Color.Transparent)
-          .fontSize(16)
-          .fontColor('#181818')
-          .placeholderColor('#999999')
-
-          .borderRadius(8)
-          .onChange((value: string) => {
-            this.account = value
-            // 输入时清空错误提示
-            this.errorTip = ''
-          })
-      }
-      .backgroundColor('#F5F5F5')
-      .margin({ bottom: 16 })
-
-      // 3. 密码输入框
-      Stack({ alignContent: Alignment.Start }) {
-        Image($r('app.media.lock')) // 可替换为自有密码图标
-          .width(24)
-          .height(24)
-          .margin({ left: 16 })
-          .fillColor('#666666')
-
-        TextInput({ placeholder: '请输入登录密码' })
-          .width('100%')
-          .height(56)
-          .padding({ left: 56, right: 56 })
-          .fontSize(16)
-          .fontColor('#181818')
-          .placeholderColor('#999999')
-          .backgroundColor('#F5F5F5')
-          .borderRadius(8)
-          .type(this.isPwdHidden ? InputType.Password : InputType.Normal)
-          .onChange((value: string) => {
-            this.password = value
-            // 输入时清空错误提示
-            this.errorTip = ''
-          })
-
-        // 密码显示/隐藏切换按钮
-        Button() {
-          Image(this.isPwdHidden ? $r('app.media.lock') : $r('app.media.lock'))
-            .width(24)
-            .height(24)
-            .fillColor('#666666')
-        }
-        .width(48)
-        .height(48)
-        .margin({ right: 8 })
-        .backgroundColor('transparent')
-        .onClick(() => {
-          this.isPwdHidden = !this.isPwdHidden
+      TextInput({ placeholder: '请输入手机号' })
+        .type(InputType.PhoneNumber)
+        .width('100%')
+        .height(56)
+        .backgroundColor('#F5F5F5')
+        .borderRadius(8)
+        .padding({ left: 16, right: 16 })
+        .onChange((v: string) => {
+          this.phone = v
+          this.errorTip = ''
         })
-      }
-      .margin({ bottom: 8 })
 
-      // 4. 错误提示文本
-      if (this.errorTip !== '') {
+      TextInput({ placeholder: '请输入密码' })
+        .type(InputType.Password)
+        .width('100%')
+        .height(56)
+        .backgroundColor('#F5F5F5')
+        .borderRadius(8)
+        .padding({ left: 16, right: 16 })
+        .margin({ top: 16 })
+        .onChange((v: string) => {
+          this.password = v
+          this.errorTip = ''
+        })
+
+      if (this.errorTip.length > 0) {
         Text(this.errorTip)
           .fontSize(14)
           .fontColor('#F53F3F')
-          .margin({ left: 4, bottom: 24 })
-          .textAlign(TextAlign.Start)
           .width('100%')
+          .margin({ top: 8 })
       }
 
-      // 5. 登录按钮
       Button('登录')
         .width('100%')
         .height(56)
+        .margin({ top: 28 })
         .fontSize(18)
-        .fontWeight(FontWeight.Medium)
         .fontColor('#FFFFFF')
         .backgroundColor('#4CAF50')
         .borderRadius(8)
         .onClick(() => {
           this.handleLogin()
-          // TODO: 这里先调用你的登录API验证账号密码
-          // 假设登录成功：
-
-          // 保存登录状态（可选）
-          //AppStorage.SetOrCreate('isLoggedIn', true)
-          //  跳转到闪屏页（不是直接跳首页！）
-          router.replaceUrl({
-            url: 'pages/SplashPage'
-          })
         })
 
-      // 6. 辅助操作（忘记密码/注册账号）
-      Row() {
-        Text('忘记密码？')
-          .fontSize(14)
-          .fontColor('#007AFF')
-          .onClick(() => {
-            // 跳转忘记密码页面逻辑
-            console.log('点击忘记密码')
-          })
-
-        Text('|')
-          .fontSize(14)
-          .fontColor('#999999')
-          .margin({ left: 16, right: 16 })
-
-        Text('注册账号')
-          .fontSize(14)
-          .fontColor('#007AFF')
-          .onClick(() => {
-            router.pushUrl({ url: 'pages/BirdRegister' })
-          })
-      }
-      .margin({ top: 24 })
+      Text('没有账号？去注册')
+        .fontSize(14)
+        .fontColor('#007AFF')
+        .margin({ top: 20 })
+        .onClick(() => {
+          router.pushUrl({ url: 'pages/BirdRegister' })
+        })
     }
     .width('100%')
+    .height('100%')
     .padding({ left: 32, right: 32 })
     .backgroundColor('#FFFFFF')
     .justifyContent(FlexAlign.Start)
-    .height('100%')
   }
 
-  /**
-   * 登录处理函数（包含表单校验）
-   */
-  private handleLogin(): void {
-    // 1. 账号非空校验
-    if (this.account.trim() === '') {
-      this.errorTip = '请输入账号/手机号'
+  private async handleLogin() {
+    if (!/^1[3-9]\d{9}$/.test(this.phone)) {
+      this.errorTip = '手机号格式错误'
       return
     }
-
-    // 2. 密码非空校验
-    if (this.password.trim() === '') {
-      this.errorTip = '请输入登录密码'
-      return
-    }
-
-    // 3. 密码长度校验（可选，可根据业务调整）
     if (this.password.length < 6) {
-      this.errorTip = '密码长度不能少于6位'
+      this.errorTip = '密码至少 6 位'
       return
     }
 
-    // 4. 校验通过，执行登录逻辑（此处为模拟，实际需对接接口）
-    console.log(`账号：${this.account}，密码：${this.password}，开始登录`)
-    this.errorTip = ''
-    // 示例：模拟登录成功提示
-    prompt.showToast({ message: '登录成功', duration: 2000 })
-    // 后续可添加：跳转首页、存储用户信息等逻辑
-    router.replaceUrl({
-      url: 'pages/HomePage' // 关键：指定HomePage的页面路径，需与你的项目实际路径匹配
-    })
+    try {
+      const payload: LoginPayload = {
+        phone: this.phone,
+        password: this.password
+      }
+      const loginRes: LoginResult | null = await BirdBackendService.login(payload)
+
+      if (loginRes === null) {
+        this.errorTip = '登录失败，请检查账号密码'
+        return
+      }
+
+      prompt.showToast({ message: '登录成功', duration: 1500 })
+      router.replaceUrl({ url: 'pages/SplashPage' })
+    } catch (_e) {
+      this.errorTip = '登录失败，请检查网络或后端服务'
+    }
   }
 }

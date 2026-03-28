@@ -12,6 +12,11 @@ interface ApiResponseLike<T> {
   data?: T
 }
 
+interface HttpHeaders {
+  'Content-Type': string
+  Authorization?: string
+}
+
 interface BirdApiPayload {
   birdId?: number
   bird_id?: number
@@ -68,6 +73,21 @@ interface PostApiPayload {
   created_at?: string
 }
 
+export interface BirdApiItem {
+  birdId: number
+  birdNameZh: string
+  birdNameLatin: string
+  birdFamily: string
+  birdHabitat: string
+  birdProtection: string
+  birdPoster: string
+  birdCall: string
+  birdDistribution: string
+  birdLivingHabits: string
+  birdBreeding: string
+  birdIntro: string
+}
+
 export interface CommunityPostItem {
   id: string
   userId: string
@@ -102,54 +122,30 @@ export interface CreateCommunityPostPayload {
   video: string
 }
 
-export interface BirdApiItem {
-  birdId: number
-  birdNameZh: string
-  birdNameLatin: string
-  birdFamily: string
-  birdHabitat: string
-  birdProtection: string
-  birdPoster: string
-  birdCall: string
-  birdDistribution: string
-  birdLivingHabits: string
-  birdBreeding: string
-  birdIntro: string
+export interface RegisterPayload {
+  phone: string
+  password: string
+  nickname?: string
 }
 
-function parseCsvTags(value: string | null | undefined): string[] {
-  if (value === null || value === undefined || value.trim().length === 0) {
-    return []
-  }
-  return value.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag.length > 0)
+export interface LoginPayload {
+  phone: string
+  password: string
 }
 
-function parseJsonImages(value: string | null | undefined): string[] {
-  if (value === null || value === undefined || value.trim().length === 0) {
-    return []
-  }
-  try {
-    const parsed = JSON.parse(value) as string[]
-    if (Array.isArray(parsed)) {
-      return parsed
-    }
-    return []
-  } catch (_e) {
-    return []
-  }
+export interface LoginResult {
+  token: string
+  userId: string
+  nickname: string
 }
 
 function normalizeText(value: string | null | undefined, fallback: string = ''): string {
-  if (value === null || value === undefined) {
-    return fallback
-  }
+  if (value === null || value === undefined) return fallback
   return value
 }
 
 function normalizeNumber(value: number | null | undefined, fallback: number = 0): number {
-  if (value === null || value === undefined || Number.isNaN(value)) {
-    return fallback
-  }
+  if (value === null || value === undefined || Number.isNaN(value)) return fallback
   return value
 }
 
@@ -159,15 +155,9 @@ function pickText(
   tertiary: string | null | undefined,
   fallback: string = ''
 ): string {
-  if (primary !== null && primary !== undefined) {
-    return normalizeText(primary, fallback)
-  }
-  if (secondary !== null && secondary !== undefined) {
-    return normalizeText(secondary, fallback)
-  }
-  if (tertiary !== null && tertiary !== undefined) {
-    return normalizeText(tertiary, fallback)
-  }
+  if (primary !== null && primary !== undefined) return normalizeText(primary, fallback)
+  if (secondary !== null && secondary !== undefined) return normalizeText(secondary, fallback)
+  if (tertiary !== null && tertiary !== undefined) return normalizeText(tertiary, fallback)
   return fallback
 }
 
@@ -176,50 +166,29 @@ function pickNumber(
   secondary: number | null | undefined,
   fallback: number = 0
 ): number {
-  if (primary !== null && primary !== undefined && !Number.isNaN(primary)) {
-    return primary
-  }
-  if (secondary !== null && secondary !== undefined && !Number.isNaN(secondary)) {
-    return secondary
-  }
+  if (primary !== null && primary !== undefined && !Number.isNaN(primary)) return primary
+  if (secondary !== null && secondary !== undefined && !Number.isNaN(secondary)) return secondary
   return fallback
 }
 
-export function mapPosterResource(posterKey: string | null | undefined): Resource {
-  const normalizedInput: string = normalizeText(posterKey, '')
-  const normalizedKey: string = normalizedInput.startsWith('app.media.')
-    ? normalizedInput.substring(10)
-    : normalizedInput
-  switch (normalizedKey) {
-    case 'Urocissa_erythroryncha':
-      return $r('app.media.Urocissa_erythroryncha')
-    case 'Platalea_minor':
-      return $r('app.media.Platalea_minor')
-    case 'Alcedo_atthis':
-      return $r('app.media.Alcedo_atthis')
-    case 'Nipponia_nippon':
-      return $r('app.media.Nipponia_nippon')
-    case 'Mergus_squamatus':
-      return $r('app.media.Mergus_squamatus')
-    case 'Tragopan_caboti':
-      return $r('app.media.Tragopan_caboti')
-    case 'Grus_nigricollis':
-      return $r('app.media.Grus_nigricollis')
-    case 'Crossoptilon_mantchuricum':
-      return $r('app.media.Crossoptilon_mantchuricum')
-    case 'Chrysolophus_amherstiae':
-      return $r('app.media.Chrysolophus_amherstiae')
-    case 'Chrysolophus_pictus':
-      return $r('app.media.Chrysolophus_pictus')
-    case 'Ciconia_boyciana':
-      return $r('app.media.Ciconia_boyciana')
-    case 'Cygnus_cygnus':
-      return $r('app.media.Cygnus_cygnus')
-    case 'Aix_galericulata':
-      return $r('app.media.Aix_galericulata')
-    default:
-      return $r('app.media.ic_close')
+function parseCsvTags(value: string | null | undefined): string[] {
+  if (value === null || value === undefined || value.trim().length === 0) return []
+  return value.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag.length > 0)
+}
+
+function parseJsonImages(value: string | null | undefined): string[] {
+  if (value === null || value === undefined || value.trim().length === 0) return []
+  try {
+    const parsed = JSON.parse(value) as string[]
+    if (Array.isArray(parsed)) return parsed
+    return []
+  } catch (_e) {
+    return []
   }
+}
+
+export function mapPosterResource(_posterKey: string | null | undefined): Resource {
+  return $r('app.media.ic_close')
 }
 
 export function mapCallResource(_callKey: string | null | undefined): Resource {
@@ -232,8 +201,53 @@ export class BirdBackendService {
     'http://127.0.0.1:8000',
     'http://localhost:8000'
   ]
+
   private static readonly API_PREFIX: string = '/api/catalog'
   private static readonly COMMUNITY_PREFIX: string = '/api/community/posts'
+  private static readonly AUTH_PREFIX: string = '/api/auth'
+
+  private static authToken: string = ''
+  private static loginUserId: string = ''
+
+  private static readToken(): string {
+    const raw: Object | undefined = AppStorage.get('authToken') as Object | undefined
+    if (typeof raw === 'string') {
+      return raw
+    }
+    return ''
+  }
+
+  private static readUserId(): string {
+    const raw: Object | undefined = AppStorage.get('loginUserId') as Object | undefined
+    if (typeof raw === 'string') {
+      return raw
+    }
+    return ''
+  }
+
+  static setAuthToken(token: string) {
+    AppStorage.setOrCreate('authToken', token)
+    BirdBackendService.authToken = token
+  }
+
+  static getAuthToken(): string {
+    const t: string = BirdBackendService.readToken()
+    BirdBackendService.authToken = t
+    return t
+  }
+
+  static clearAuthToken() {
+    AppStorage.setOrCreate('authToken', '')
+    AppStorage.setOrCreate('loginUserId', '')
+    BirdBackendService.authToken = ''
+    BirdBackendService.loginUserId = ''
+  }
+
+  static getLoginUserId(): string {
+    const uid: string = BirdBackendService.readUserId()
+    BirdBackendService.loginUserId = uid
+    return uid
+  }
 
   private static async requestApiWithPrefix<T>(
     apiPrefix: string,
@@ -246,19 +260,26 @@ export class BirdBackendService {
     for (let i = 0; i < BirdBackendService.BASE_URLS.length; i++) {
       const baseUrl: string = BirdBackendService.BASE_URLS[i]
       const req: http.HttpRequest = http.createHttp()
+
       try {
         const url: string = `${baseUrl}${apiPrefix}${path}`
-        console.info(`BirdBackendService request -> ${url}`)
+
+        const headers: HttpHeaders = {
+          'Content-Type': 'application/json'
+        }
+        const token: string = BirdBackendService.getAuthToken()
+        if (token.length > 0) {
+          headers.Authorization = `Bearer ${token}`
+        }
 
         const options: http.HttpRequestOptions = {
           method: method,
-          header: {
-            'Content-Type': 'application/json'
-          },
+          header: headers,
           expectDataType: http.HttpDataType.STRING,
           connectTimeout: 15000,
           readTimeout: 15000
         }
+
         if (body !== null && body !== undefined) {
           options.extraData = JSON.stringify(body)
         }
@@ -267,30 +288,26 @@ export class BirdBackendService {
 
         if (resp.responseCode !== 200 || resp.result === null) {
           lastError = `base=${baseUrl}, code=${resp.responseCode}`
-          console.error(`BirdBackendService non-200: ${lastError}`)
           continue
         }
 
         const parsed = JSON.parse(resp.result as string) as ApiResponseLike<T> | T
         const wrapped = parsed as ApiResponseLike<T>
-        if (wrapped.code !== undefined && wrapped.data !== undefined) {
-          const normalizedResponse: ApiResponse<T> = {
+        if (wrapped.code !== undefined) {
+          return {
             code: wrapped.code,
             msg: normalizeText(wrapped.msg, 'ok'),
-            data: wrapped.data
+            data: wrapped.data as T
           }
-          return normalizedResponse
         }
 
-        const fallbackResponse: ApiResponse<T> = {
+        return {
           code: 200,
           msg: 'ok',
           data: parsed as T
         }
-        return fallbackResponse
       } catch (e) {
         lastError = `base=${baseUrl}, err=${JSON.stringify(e)}`
-        console.error(`BirdBackendService request error: ${lastError}`)
       } finally {
         req.destroy()
       }
@@ -299,15 +316,8 @@ export class BirdBackendService {
     throw new Error(`All backend endpoints failed: ${lastError}`)
   }
 
-  private static async requestApi<T>(
-    path: string,
-    method: http.RequestMethod
-  ): Promise<ApiResponse<T>> {
-    return BirdBackendService.requestApiWithPrefix<T>(
-      BirdBackendService.API_PREFIX,
-      path,
-      method
-    )
+  private static async requestApi<T>(path: string, method: http.RequestMethod): Promise<ApiResponse<T>> {
+    return BirdBackendService.requestApiWithPrefix<T>(BirdBackendService.API_PREFIX, path, method)
   }
 
   private static async requestCommunityApi<T>(
@@ -315,22 +325,41 @@ export class BirdBackendService {
     method: http.RequestMethod,
     body?: Object
   ): Promise<ApiResponse<T>> {
-    return BirdBackendService.requestApiWithPrefix<T>(
-      BirdBackendService.COMMUNITY_PREFIX,
-      path,
-      method,
-      body
-    )
+    return BirdBackendService.requestApiWithPrefix<T>(BirdBackendService.COMMUNITY_PREFIX, path, method, body)
+  }
+
+  private static async requestAuthApi<T>(
+    path: string,
+    method: http.RequestMethod,
+    body?: Object
+  ): Promise<ApiResponse<T>> {
+    return BirdBackendService.requestApiWithPrefix<T>(BirdBackendService.AUTH_PREFIX, path, method, body)
+  }
+
+  static async register(payload: RegisterPayload): Promise<boolean> {
+    const res = await BirdBackendService.requestAuthApi<boolean>('/register', http.RequestMethod.POST, payload as Object)
+    return res.code === 200
+  }
+
+  static async login(payload: LoginPayload): Promise<LoginResult | null> {
+    const res = await BirdBackendService.requestAuthApi<LoginResult>('/login', http.RequestMethod.POST, payload as Object)
+    if (res.code !== 200 || !res.data) return null
+
+    BirdBackendService.authToken = res.data.token
+    BirdBackendService.loginUserId = res.data.userId
+    AppStorage.setOrCreate('authToken', res.data.token)
+    AppStorage.setOrCreate('loginUserId', res.data.userId)
+    return res.data
   }
 
   private static normalizeBird(item: BirdApiPayload): BirdApiItem {
     return {
       birdId: normalizeNumber(pickNumber(item.birdId, item.bird_id, 0), 0),
-      birdNameZh: pickText(item.birdNameZh, item.bird_nameZh, item.bird_name_zh, '\u672A\u77E5\u9E1F\u7C7B'),
-      birdNameLatin: pickText(item.birdNameLatin, item.bird_nameLatin, item.bird_name_latin, '\u6682\u65E0\u5B66\u540D'),
-      birdFamily: pickText(item.birdFamily, item.bird_family, undefined, '\u6682\u65E0\u79D1\u5C5E\u4FE1\u606F'),
-      birdHabitat: pickText(item.birdHabitat, item.bird_habitat, undefined, '\u6682\u65E0\u6806\u606F\u5730\u4FE1\u606F'),
-      birdProtection: pickText(item.birdProtection, item.bird_protection, undefined, '\u6682\u65E0\u4FDD\u62A4\u4FE1\u606F'),
+      birdNameZh: pickText(item.birdNameZh, item.bird_nameZh, item.bird_name_zh, '未知鸟类'),
+      birdNameLatin: pickText(item.birdNameLatin, item.bird_nameLatin, item.bird_name_latin, ''),
+      birdFamily: pickText(item.birdFamily, item.bird_family, undefined, ''),
+      birdHabitat: pickText(item.birdHabitat, item.bird_habitat, undefined, ''),
+      birdProtection: pickText(item.birdProtection, item.bird_protection, undefined, ''),
       birdPoster: pickText(item.birdPoster, item.bird_poster, undefined, ''),
       birdCall: pickText(item.birdCall, item.bird_call, undefined, ''),
       birdDistribution: pickText(item.birdDistribution, item.bird_distribution, undefined, ''),
@@ -342,33 +371,26 @@ export class BirdBackendService {
 
   static async fetchBirds(): Promise<BirdApiItem[]> {
     const res = await BirdBackendService.requestApi<BirdApiPayload[]>('/birds', http.RequestMethod.GET)
-    if (res.code !== 200 || !res.data || !Array.isArray(res.data)) {
-      return []
-    }
+    if (res.code !== 200 || !res.data || !Array.isArray(res.data)) return []
     return res.data.map((item: BirdApiPayload) => BirdBackendService.normalizeBird(item))
   }
 
   static async fetchBirdById(birdId: number): Promise<BirdApiItem | null> {
     const res = await BirdBackendService.requestApi<BirdApiPayload>(`/birds/${birdId}`, http.RequestMethod.GET)
-    if (res.code !== 200 || !res.data) {
-      return null
-    }
+    if (res.code !== 200 || !res.data) return null
     return BirdBackendService.normalizeBird(res.data)
   }
 
   private static normalizeCommunityPost(item: PostApiPayload): CommunityPostItem {
-    const id: number = normalizeNumber(item.id, 0)
     const createdText: string = normalizeText(pickText(item.createdAt, item.created_at, undefined, ''), '')
     const createdTimestamp: number = createdText.length > 0 ? Date.parse(createdText) : Date.now()
-    const likedValue: boolean = item.isLiked !== undefined
-      ? !!item.isLiked
-      : normalizeNumber(item.is_liked, 0) === 1
+    const likedValue: boolean = item.isLiked !== undefined ? !!item.isLiked : normalizeNumber(item.is_liked, 0) === 1
 
     return {
-      id: id.toString(),
+      id: normalizeNumber(item.id, 0).toString(),
       userId: pickText(item.userId, item.user_id, undefined, ''),
       userName: pickText(item.userName, item.user_name, undefined, 'Unknown'),
-      userAvatar: pickText(item.userAvatar, item.user_avatar, undefined, 'https://example.com/default_avatar.jpg'),
+      userAvatar: pickText(item.userAvatar, item.user_avatar, undefined, ''),
       birdName: pickText(item.birdName, item.bird_name, undefined, 'Unknown Bird'),
       birdImage: pickText(item.birdImage, item.bird_image, undefined, ''),
       description: normalizeText(item.description, ''),
@@ -387,30 +409,22 @@ export class BirdBackendService {
 
   static async fetchCommunityPosts(): Promise<CommunityPostItem[]> {
     const res = await BirdBackendService.requestCommunityApi<PostApiPayload[]>('', http.RequestMethod.GET)
-    if (res.code !== 200 || !res.data || !Array.isArray(res.data)) {
-      return []
-    }
+    if (res.code !== 200 || !res.data || !Array.isArray(res.data)) return []
     return res.data.map((item: PostApiPayload) => BirdBackendService.normalizeCommunityPost(item))
   }
 
   static async createCommunityPost(payload: CreateCommunityPostPayload): Promise<CommunityPostItem | null> {
-    const res = await BirdBackendService.requestCommunityApi<PostApiPayload>(
-      '',
-      http.RequestMethod.POST,
-      payload as Object
-    )
-    if (res.code !== 200 || !res.data) {
-      return null
-    }
+    const res = await BirdBackendService.requestCommunityApi<PostApiPayload>('', http.RequestMethod.POST, payload as Object)
+    if (res.code !== 200 || !res.data) return null
     return BirdBackendService.normalizeCommunityPost(res.data)
   }
 
   static async likeCommunityPost(postId: string, liked: boolean): Promise<CommunityPostItem | null> {
-    const path: string = `/${postId}/like?liked=${liked ? 'true' : 'false'}`
-    const res = await BirdBackendService.requestCommunityApi<PostApiPayload>(path, http.RequestMethod.POST)
-    if (res.code !== 200 || !res.data) {
-      return null
-    }
+    const res = await BirdBackendService.requestCommunityApi<PostApiPayload>(
+      `/${postId}/like?liked=${liked ? 'true' : 'false'}`,
+      http.RequestMethod.POST
+    )
+    if (res.code !== 200 || !res.data) return null
     return BirdBackendService.normalizeCommunityPost(res.data)
   }
 

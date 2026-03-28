@@ -1,5 +1,4 @@
-﻿// BirdSharingPage.ets  鉁呭簳閮ㄥ鑸烦杞凡淇ソ
-import router from '@ohos.router'
+﻿import router from '@ohos.router'
 import photoAccessHelper from '@ohos.file.photoAccessHelper'
 import promptAction from '@ohos.promptAction'
 import { BirdBackendService, CommunityPostItem, CreateCommunityPostPayload } from '../services/BirdBackendService'
@@ -45,7 +44,7 @@ interface NavItem {
 @Entry
 @Component
 struct BirdSharingPage {
-  private readonly CURRENT_USER_ID: string = 'current_user'
+  @State currentUserId: string = ''
 
   @State posts: BirdPost[] = []
   @State isShowPublishDialog: boolean = false
@@ -67,6 +66,7 @@ struct BirdSharingPage {
   ]
 
   aboutToAppear() {
+    this.currentUserId = BirdBackendService.getLoginUserId()
     this.loadPostsFromBackend()
   }
 
@@ -572,7 +572,7 @@ struct BirdSharingPage {
     }
 
     const payload: CreateCommunityPostPayload = {
-      userId: this.CURRENT_USER_ID,
+      userId: this.currentUserId,
       userName: '我',
       userAvatar: 'https://example.com/my_avatar.jpg',
       birdName: '未知鸟类',
@@ -588,7 +588,7 @@ struct BirdSharingPage {
     try {
       const created = await BirdBackendService.createCommunityPost(payload)
       if (created) {
-        this.posts.unshift(this.mapApiPost(created))
+        await this.loadPostsFromBackend()
         this.isShowPublishDialog = false
         this.resetPublishForm()
         promptAction.showToast({ message: '发布成功' })
@@ -613,7 +613,9 @@ struct BirdSharingPage {
   }
 
   private canDeletePost(post: BirdPost): boolean {
-    return post.userId === this.CURRENT_USER_ID
+    const me: string = this.currentUserId.trim()
+    const owner: string = post.userId.trim()
+    return me.length > 0 && owner === me
   }
 
   private async confirmDeletePost(): Promise<boolean> {
@@ -622,14 +624,8 @@ struct BirdSharingPage {
         title: '删除帖子',
         message: '确定要删除这条帖子吗？删除后无法恢复。',
         buttons: [
-          {
-            text: '取消',
-            color: '#666666'
-          },
-          {
-            text: '删除',
-            color: '#FF4444'
-          }
+          { text: '取消', color: '#666666' },
+          { text: '删除', color: '#FF4444' }
         ]
       })
       return result.index === 1
@@ -640,9 +636,7 @@ struct BirdSharingPage {
 
   private async deletePost(post: BirdPost) {
     const confirmed: boolean = await this.confirmDeletePost()
-    if (!confirmed) {
-      return
-    }
+    if (!confirmed) return
 
     try {
       const ok: boolean = await BirdBackendService.deleteCommunityPost(post.id)
