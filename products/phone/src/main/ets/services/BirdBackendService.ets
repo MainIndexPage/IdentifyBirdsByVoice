@@ -1,4 +1,4 @@
-import { http } from '@kit.NetworkKit'
+﻿import { http } from '@kit.NetworkKit'
 
 interface ApiResponse<T> {
   code: number
@@ -217,9 +217,9 @@ export function mapCallResource(_callKey: string | null | undefined): Resource {
 
 export class BirdBackendService {
   private static readonly BASE_URLS: string[] = [
-    'http://10.0.2.2:8000',
-    'http://127.0.0.1:8000',
-    'http://localhost:8000'
+    'http://10.0.2.2:8001',
+    'http://127.0.0.1:8001',
+    'http://localhost:8001'
   ]
 
   private static readonly API_PREFIX: string = '/api/catalog'
