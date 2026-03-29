@@ -188,7 +188,27 @@ function parseJsonImages(value: string | null | undefined): string[] {
 }
 
 export function mapPosterResource(_posterKey: string | null | undefined): Resource {
-  return $r('app.media.ic_close')
+  const normalizedInput: string = normalizeText(_posterKey, '')
+  const normalizedKey: string = normalizedInput.startsWith('app.media.')
+    ? normalizedInput.substring(10)
+    : normalizedInput
+
+  switch (normalizedKey) {
+    case 'Urocissa_erythroryncha': return $r('app.media.Urocissa_erythroryncha')
+    case 'Platalea_minor': return $r('app.media.Platalea_minor')
+    case 'Alcedo_atthis': return $r('app.media.Alcedo_atthis')
+    case 'Nipponia_nippon': return $r('app.media.Nipponia_nippon')
+    case 'Mergus_squamatus': return $r('app.media.Mergus_squamatus')
+    case 'Tragopan_caboti': return $r('app.media.Tragopan_caboti')
+    case 'Grus_nigricollis': return $r('app.media.Grus_nigricollis')
+    case 'Crossoptilon_mantchuricum': return $r('app.media.Crossoptilon_mantchuricum')
+    case 'Chrysolophus_amherstiae': return $r('app.media.Chrysolophus_amherstiae')
+    case 'Chrysolophus_pictus': return $r('app.media.Chrysolophus_pictus')
+    case 'Ciconia_boyciana': return $r('app.media.Ciconia_boyciana')
+    case 'Cygnus_cygnus': return $r('app.media.Cygnus_cygnus')
+    case 'Aix_galericulata': return $r('app.media.Aix_galericulata')
+    default: return $r('app.media.ic_close')
+  }
 }
 
 export function mapCallResource(_callKey: string | null | undefined): Resource {
