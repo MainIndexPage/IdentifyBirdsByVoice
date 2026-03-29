@@ -207,6 +207,8 @@ export function mapPosterResource(_posterKey: string | null | undefined): Resour
     case 'Ciconia_boyciana': return $r('app.media.Ciconia_boyciana')
     case 'Cygnus_cygnus': return $r('app.media.Cygnus_cygnus')
     case 'Aix_galericulata': return $r('app.media.Aix_galericulata')
+    case 'Pseudocolopteryx_acutipennis_Subtropical_Doradito': return $r('app.media.Pseudocolopteryx_acutipennis_Subtropical_Doradito')
+    case 'Mellisuga_helenae_Bee_Hummingbird': return $r('app.media.Mellisuga_helenae_Bee_Hummingbird')
     default: return $r('app.media.ic_close')
   }
 }

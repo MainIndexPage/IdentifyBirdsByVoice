@@ -7,6 +7,7 @@ import router from '@ohos.router';
 import hilog from '@ohos.hilog';
 import picker from '@ohos.file.picker';
 import { BusinessError } from '@ohos.base';
+import { BirdApiItem, BirdBackendService, mapPosterResource } from '../services/BirdBackendService';
 
 interface NavItem {
   name: string;
@@ -26,6 +27,20 @@ interface BackendResponse {
   data: BirdResult[];
 }
 
+interface RecognitionFallbackBird {
+  recognitionLabel: string;
+  birdNameZh: string;
+  birdNameLatin: string;
+  birdFamily: string;
+  birdHabitat: string;
+  birdProtection: string;
+  birdPoster: string;
+  birdDistribution: string;
+  birdLivingHabits: string;
+  birdBreeding: string;
+  birdIntro: string;
+}
+
 @Entry
 @Component
 struct BirdSoundRecognitionPage {
@@ -35,14 +50,9 @@ struct BirdSoundRecognitionPage {
   @State private resultText: string = '请先录制鸟类声音或上传音频文件';
   @State private recordBtnText: string = '开始录音';
   @State private currentNavIndex: number = 2;
-  // 【新增】识别结果简介状态
   @State private resultDescription: string = '';
-  // 【新增】当前识别鸟类的图片资源（解决ArkTS动态资源引用问题）
   @State private currentBirdImage: Resource | null = null;
-
-  // 【新增】鸟类图片资源常量（请务必将对应图片放入resources/base/media目录，文件名完全匹配，无需写后缀）
-  private readonly DORADITO_IMG: Resource = $r('app.media.Pseudocolopteryx_acutipennis_Subtropical_Doradito');
-  private readonly HUMMINGBIRD_IMG: Resource = $r('app.media.Mellisuga_helenae_Bee_Hummingbird');
+  @State private matchedBirdId: number = -1;
 
   private navItems: NavItem[] = [
     { name: '首页', icon: $r('app.media.nav_home'), route: 'pages/HomePage' },
@@ -53,6 +63,34 @@ struct BirdSoundRecognitionPage {
   ];
 
   private readonly SERVER_URL: string = 'http://10.0.2.2:8000/api/bird/recognize';
+  private readonly FALLBACK_BIRDS: RecognitionFallbackBird[] = [
+    {
+      recognitionLabel: 'Pseudocolopteryx acutipennis_Subtropical Doradito',
+      birdNameZh: '亚热带多拉霸鹟',
+      birdNameLatin: 'Pseudocolopteryx acutipennis',
+      birdFamily: '霸鹟科',
+      birdHabitat: '亚热带或热带湿润灌丛、沼泽湿地周边',
+      birdProtection: '暂无资料',
+      birdPoster: 'Pseudocolopteryx_acutipennis_Subtropical_Doradito',
+      birdDistribution: '主要分布于南美洲。',
+      birdLivingHabits: '多活动于湿润灌丛和湿地边缘，常在低矮植被间觅食。',
+      birdBreeding: '暂无详细繁殖资料，可后续补充。',
+      birdIntro: '亚热带多拉霸鹟，也可译为尖翅伪霸鹟，是雀形目霸鹟科的小型鸟类。'
+    },
+    {
+      recognitionLabel: 'Mellisuga helenae_Bee Hummingbird',
+      birdNameZh: '吸蜜蜂鸟',
+      birdNameLatin: 'Mellisuga helenae',
+      birdFamily: '蜂鸟科',
+      birdHabitat: '亚热带或热带湿润灌丛、林缘及花蜜丰富的花园',
+      birdProtection: '暂无资料',
+      birdPoster: 'Mellisuga_helenae_Bee_Hummingbird',
+      birdDistribution: '主要分布于古巴及青年岛。',
+      birdLivingHabits: '体型极小，常悬停采食花蜜，也会捕食小型昆虫。',
+      birdBreeding: '暂无详细繁殖资料，可后续补充。',
+      birdIntro: '吸蜜蜂鸟是世界现存最小的鸟类之一，属于雨燕目蜂鸟科。'
+    }
+  ];
 
   private stringToArrayBuffer(str: string): ArrayBuffer {
     const buffer: ArrayBuffer = new ArrayBuffer(str.length);
@@ -69,6 +107,130 @@ struct BirdSoundRecognitionPage {
 
   aboutToDisappear(): void {
     AudioCapture.release();
+  }
+
+  private normalizeMatchText(text: string): string {
+    return text.toLowerCase().replace(/[_\-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  private splitRecognitionLabel(label: string): string[] {
+    const values: string[] = [label];
+    const separatorIndex: number = label.indexOf('_');
+    if (separatorIndex >= 0) {
+      values.push(label.substring(0, separatorIndex));
+      values.push(label.substring(separatorIndex + 1));
+    }
+    return values
+      .map((item: string) => item.trim())
+      .filter((item: string) => item.length > 0);
+  }
+
+  private buildBirdDescriptionFromApi(item: BirdApiItem): string {
+    const sections: string[] = [];
+    if (item.birdIntro.trim().length > 0) {
+      sections.push(item.birdIntro.trim());
+    }
+    if (item.birdFamily.trim().length > 0) {
+      sections.push(`科属：${item.birdFamily.trim()}`);
+    }
+    if (item.birdHabitat.trim().length > 0) {
+      sections.push(`栖息地：${item.birdHabitat.trim()}`);
+    }
+    if (item.birdDistribution.trim().length > 0) {
+      sections.push(`分布：${item.birdDistribution.trim()}`);
+    }
+    if (item.birdLivingHabits.trim().length > 0) {
+      sections.push(`生活习性：${item.birdLivingHabits.trim()}`);
+    }
+    if (item.birdBreeding.trim().length > 0) {
+      sections.push(`繁殖：${item.birdBreeding.trim()}`);
+    }
+    return sections.join('\n');
+  }
+
+  private buildBirdDescriptionFromFallback(item: RecognitionFallbackBird): string {
+    return [
+      item.birdIntro,
+      `科属：${item.birdFamily}`,
+      `栖息地：${item.birdHabitat}`,
+      `分布：${item.birdDistribution}`,
+      `生活习性：${item.birdLivingHabits}`,
+      `繁殖：${item.birdBreeding}`
+    ].join('\n');
+  }
+
+  private matchBirdFromDatabase(recognitionLabel: string, birds: BirdApiItem[]): BirdApiItem | null {
+    const candidates: string[] = this.splitRecognitionLabel(recognitionLabel)
+      .map((item: string) => this.normalizeMatchText(item));
+
+    for (let i: number = 0; i < birds.length; i++) {
+      const bird: BirdApiItem = birds[i];
+      const values: string[] = [bird.birdNameZh, bird.birdNameLatin]
+        .map((item: string) => this.normalizeMatchText(item))
+        .filter((item: string) => item.length > 0);
+
+      for (let j: number = 0; j < candidates.length; j++) {
+        const candidate: string = candidates[j];
+        if (values.some((value: string) => value === candidate || value.includes(candidate) || candidate.includes(value))) {
+          return bird;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  private findFallbackBird(recognitionLabel: string): RecognitionFallbackBird | null {
+    const normalizedLabel: string = this.normalizeMatchText(recognitionLabel);
+    for (let i: number = 0; i < this.FALLBACK_BIRDS.length; i++) {
+      const item: RecognitionFallbackBird = this.FALLBACK_BIRDS[i];
+      if (this.normalizeMatchText(item.recognitionLabel) === normalizedLabel) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  private resetRecognitionView() {
+    this.resultDescription = '';
+    this.currentBirdImage = null;
+    this.matchedBirdId = -1;
+  }
+
+  private async applyRecognitionBird(topBird: BirdResult): Promise<void> {
+    this.matchedBirdId = -1;
+    const confidenceText: string = `${(topBird.confidence * 100).toFixed(2)}%`;
+
+    try {
+      const birds: BirdApiItem[] = await BirdBackendService.fetchBirds();
+      const matchedBird: BirdApiItem | null = this.matchBirdFromDatabase(topBird.bird_name, birds);
+      if (matchedBird !== null) {
+        this.matchedBirdId = matchedBird.birdId;
+        this.currentBirdImage = mapPosterResource(matchedBird.birdPoster);
+        this.resultDescription = this.buildBirdDescriptionFromApi(matchedBird);
+        this.resultText = `识别成功\n鸟类：${matchedBird.birdNameZh}\n学名：${matchedBird.birdNameLatin}\n置信度：${confidenceText}`;
+        return;
+      }
+    } catch (_e) {
+    }
+
+    const fallbackBird: RecognitionFallbackBird | null = this.findFallbackBird(topBird.bird_name);
+    if (fallbackBird !== null) {
+      this.currentBirdImage = mapPosterResource(fallbackBird.birdPoster);
+      this.resultDescription = this.buildBirdDescriptionFromFallback(fallbackBird);
+      this.resultText = `识别成功\n鸟类：${fallbackBird.birdNameZh}\n学名：${fallbackBird.birdNameLatin}\n置信度：${confidenceText}\n数据库中暂无该鸟类图鉴，请先补充表数据`;
+      return;
+    }
+
+    this.resultText = `识别成功\n鸟类：${topBird.bird_name}\n置信度：${confidenceText}\n数据库中暂无匹配图鉴`;
+  }
+
+  private goBirdDetail() {
+    if (this.matchedBirdId <= 0) {
+      promptAction.showToast({ message: '数据库中暂无对应图鉴' });
+      return;
+    }
+    router.push({ url: 'pages/BirdDetail', params: { birdId: this.matchedBirdId } });
   }
 
   private async checkPermission(): Promise<boolean> {
@@ -131,9 +293,7 @@ struct BirdSoundRecognitionPage {
       this.isRecording = true;
       this.recordBtnText = '停止录音';
       this.resultText = '正在录音中...';
-      // 【优化】开始新录音时清空旧的识别结果、简介和图片
-      this.resultDescription = '';
-      this.currentBirdImage = null;
+      this.resetRecognitionView();
 
       AudioCapture.start(this.recordedFilePath).catch((err: Error) => {
         console.error('BirdApp', '录音异常', err.message);
@@ -149,9 +309,7 @@ struct BirdSoundRecognitionPage {
   private async uploadAudioData(buffer: ArrayBuffer, fileName: string = 'bird.wav') {
     this.isRecognizing = true;
     this.resultText = '正在识别中...';
-    // 【优化】识别开始时清空旧的简介和图片
-    this.resultDescription = '';
-    this.currentBirdImage = null;
+    this.resetRecognitionView();
 
     try {
       const boundary: string = '----Boundary' + Date.now();
@@ -180,16 +338,7 @@ struct BirdSoundRecognitionPage {
         const res: BackendResponse = JSON.parse(response.result as string) as BackendResponse;
         if (res.code === 200 && res.data && res.data.length > 0) {
           const topBird: BirdResult = res.data[0];
-          this.resultText = `🎉 识别成功！\n鸟类：${topBird.bird_name}\n置信度：${(topBird.confidence * 100).toFixed(2)}%`;
-
-          // 【优化】匹配识别结果，赋值简介和对应图片
-          if (topBird.bird_name === 'Pseudocolopteryx acutipennis_Subtropical Doradito') {
-            this.resultDescription = '亚热带多拉霸鹟（也译尖翅伪霸鹟，为同物异名）\n该物种是雀形目霸鹟科的小型鸟类，原生分布于南美洲，多栖息在亚热带 / 热带的湿润灌丛、沼泽湿地周边';
-            this.currentBirdImage = this.DORADITO_IMG;
-          } else if (topBird.bird_name === 'Mellisuga helenae_Bee Hummingbird') {
-            this.resultDescription = '吸蜜蜂鸟\n该物种是雨燕目蜂鸟科的小型鸟类，为世界现存最小鸟类，仅原生分布于古巴及青年岛，多栖息在亚热带 / 热带的湿润灌丛、林缘及花园等花蜜丰富的区域。';
-            this.currentBirdImage = this.HUMMINGBIRD_IMG;
-          }
+          await this.applyRecognitionBird(topBird);
         } else {
           this.resultText = '未识别到有效鸟类';
         }
@@ -340,6 +489,16 @@ struct BirdSoundRecognitionPage {
                 .fontColor('#2E7D32')
                 .textAlign(TextAlign.Start)
                 .margin({ top: 12 })
+            }
+
+            if (this.matchedBirdId > 0) {
+              Button('查看对应图鉴')
+                .margin({ top: 12 })
+                .backgroundColor('#4CAF50')
+                .fontColor('#FFFFFF')
+                .onClick(() => {
+                  this.goBirdDetail();
+                })
             }
           }
 
