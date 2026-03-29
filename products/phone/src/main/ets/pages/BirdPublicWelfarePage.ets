@@ -49,18 +49,18 @@ struct BirdPublicWelfarePage {
       Scroll() {
         Column({ space: 20 }) {
           Image($r('app.media.img_donate_banner')).width('100%').borderRadius(12);
-          Text('让候鸟安全回家').fontSize(22).fontWeight(FontWeight.Bold).fontColor('#4CAF50');
-          Text('您的每一份捐赠都将用于栖息地巡护、环志设备与公众科普。')
-            .fontSize(14).fontColor('#666');
+          // Text('让候鸟安全回家').fontSize(22).fontWeight(FontWeight.Bold).fontColor('#4CAF50');
+          // Text('您的每一份捐赠都将用于栖息地巡护、环志设备与公众科普。')
+          //   .fontSize(14).fontColor('#666');
 
-          Button('立即捐赠')
-            .width('100%').height(48)
-            .backgroundColor('#4CAF50').borderRadius(24)
-            .onClick(() => {
-              router.pushUrl({
-                url: 'pages/BirdCharityPage'
-              });
-            });
+          // Button('立即捐赠')
+          //   .width('100%').height(48)
+          //   .backgroundColor('#4CAF50').borderRadius(24)
+          //   .onClick(() => {
+          //     router.pushUrl({
+          //       url: 'pages/BirdCharityPage'
+          //     });
+          //   });
 
           Divider().color('#EEEEEE').strokeWidth(1);
           Text('成为志愿者').fontSize(18).fontWeight(FontWeight.Medium).fontColor('#333');
