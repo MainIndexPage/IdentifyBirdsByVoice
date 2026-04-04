@@ -73,6 +73,32 @@ interface PostApiPayload {
   created_at?: string
 }
 
+interface VolunteerProjectApiPayload {
+  id?: number
+  role?: string
+  requirementText?: string
+  requirement_text?: string
+  location?: string
+  serviceTime?: string
+  service_time?: string
+  serviceTimeType?: string
+  service_time_type?: string
+  totalSpots?: number
+  total_spots?: number
+  remainingSpots?: number
+  remaining_spots?: number
+  imageKey?: string
+  image_key?: string
+  description?: string
+  contactName?: string
+  contact_name?: string
+  contactPhone?: string
+  contact_phone?: string
+  status?: string
+  sortOrder?: number
+  sort_order?: number
+}
+
 export interface BirdApiItem {
   birdId: number
   birdNameZh: string
@@ -120,6 +146,23 @@ export interface CreateCommunityPostPayload {
   privacy: string
   images: string[]
   video: string
+}
+
+export interface VolunteerProjectItem {
+  id: string
+  role: string
+  requirementText: string
+  location: string
+  serviceTime: string
+  serviceTimeType: string
+  totalSpots: number
+  remainingSpots: number
+  imageKey: string
+  description: string
+  contactName: string
+  contactPhone: string
+  status: string
+  sortOrder: number
 }
 
 export interface RegisterPayload {
@@ -217,6 +260,21 @@ export function mapCallResource(_callKey: string | null | undefined): Resource {
   return $r('app.media.voice')
 }
 
+export function mapVolunteerProjectResource(imageKey: string | null | undefined): Resource {
+  const normalizedInput: string = normalizeText(imageKey, '')
+  const normalizedKey: string = normalizedInput.startsWith('app.media.')
+    ? normalizedInput.substring(10)
+    : normalizedInput
+
+  switch (normalizedKey) {
+    case 'news_dongtan': return $r('app.media.news_dongtan')
+    case 'news_owl': return $r('app.media.news_owl')
+    case 'news_discovery': return $r('app.media.news_discovery')
+    case 'img_donate_banner': return $r('app.media.img_donate_banner')
+    default: return $r('app.media.ic_close')
+  }
+}
+
 export class BirdBackendService {
   private static readonly BASE_URLS: string[] = [
     'http://10.0.2.2:8001',
@@ -227,6 +285,7 @@ export class BirdBackendService {
   private static readonly API_PREFIX: string = '/api/catalog'
   private static readonly COMMUNITY_PREFIX: string = '/api/community/posts'
   private static readonly AUTH_PREFIX: string = '/api/auth'
+  private static readonly VOLUNTEER_PREFIX: string = '/api/volunteer'
 
   private static authToken: string = ''
   private static loginUserId: string = ''
@@ -358,6 +417,10 @@ export class BirdBackendService {
     return BirdBackendService.requestApiWithPrefix<T>(BirdBackendService.AUTH_PREFIX, path, method, body)
   }
 
+  private static async requestVolunteerApi<T>(path: string, method: http.RequestMethod): Promise<ApiResponse<T>> {
+    return BirdBackendService.requestApiWithPrefix<T>(BirdBackendService.VOLUNTEER_PREFIX, path, method)
+  }
+
   static async register(payload: RegisterPayload): Promise<boolean> {
     const res = await BirdBackendService.requestAuthApi<boolean>('/register', http.RequestMethod.POST, payload as Object)
     return res.code === 200
@@ -429,6 +492,25 @@ export class BirdBackendService {
     }
   }
 
+  private static normalizeVolunteerProject(item: VolunteerProjectApiPayload): VolunteerProjectItem {
+    return {
+      id: normalizeNumber(item.id, 0).toString(),
+      role: normalizeText(item.role, ''),
+      requirementText: pickText(item.requirementText, item.requirement_text, undefined, ''),
+      location: normalizeText(item.location, ''),
+      serviceTime: pickText(item.serviceTime, item.service_time, undefined, ''),
+      serviceTimeType: pickText(item.serviceTimeType, item.service_time_type, undefined, '全部时间'),
+      totalSpots: normalizeNumber(pickNumber(item.totalSpots, item.total_spots, 0), 0),
+      remainingSpots: normalizeNumber(pickNumber(item.remainingSpots, item.remaining_spots, 0), 0),
+      imageKey: pickText(item.imageKey, item.image_key, undefined, ''),
+      description: normalizeText(item.description, ''),
+      contactName: pickText(item.contactName, item.contact_name, undefined, ''),
+      contactPhone: pickText(item.contactPhone, item.contact_phone, undefined, ''),
+      status: normalizeText(item.status, 'OPEN'),
+      sortOrder: normalizeNumber(pickNumber(item.sortOrder, item.sort_order, 0), 0)
+    }
+  }
+
   static async fetchCommunityPosts(): Promise<CommunityPostItem[]> {
     const res = await BirdBackendService.requestCommunityApi<PostApiPayload[]>('', http.RequestMethod.GET)
     if (res.code !== 200 || !res.data || !Array.isArray(res.data)) return []
@@ -453,5 +535,11 @@ export class BirdBackendService {
   static async deleteCommunityPost(postId: string): Promise<boolean> {
     const res = await BirdBackendService.requestCommunityApi<boolean>(`/${postId}`, http.RequestMethod.DELETE)
     return res.code === 200
+  }
+
+  static async fetchVolunteerProjects(): Promise<VolunteerProjectItem[]> {
+    const res = await BirdBackendService.requestVolunteerApi<VolunteerProjectApiPayload[]>('/projects', http.RequestMethod.GET)
+    if (res.code !== 200 || !res.data || !Array.isArray(res.data)) return []
+    return res.data.map((item: VolunteerProjectApiPayload) => BirdBackendService.normalizeVolunteerProject(item))
   }
 }

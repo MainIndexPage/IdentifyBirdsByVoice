@@ -1,6 +1,7 @@
 // VolunteerApplicationPage.ets
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
+import { BirdBackendService, mapVolunteerProjectResource, VolunteerProjectItem } from '../services/BirdBackendService';
 
 // 志愿者项目数据接口
 interface VolunteerProject {
@@ -9,6 +10,7 @@ interface VolunteerProject {
   req: string;
   location: string;
   time: string;
+  timeType: string;
   spots: number;
   img: Resource;
   description: string;
@@ -38,6 +40,7 @@ struct VolunteerApplicationPage {
   @State applicantName: string = '';
   @State applicantPhone: string = '';
   @State applicantRemark: string = '';
+  @State isLoading: boolean = false;
 
   // 底部导航配置
   private navList: NavItem[] = [
@@ -51,58 +54,54 @@ struct VolunteerApplicationPage {
   // 时间筛选选项
   private timeOptions: string[] = ['全部时间', '周末', '工作日', '候鸟季(3-5月)'];
 
-  // 模拟志愿者项目数据
-  @State projects: VolunteerProject[] = [
-    {
-      id: '1',
-      role: '周末湿地巡护',
-      req: '每月 2 次，提供保险与培训',
-      location: '崇明东滩湿地',
-      time: '每周六 08:00-12:00',
-      spots: 15,
-      img: $r('app.media.news_dongtan'),
-      description: '协助工作人员进行湿地巡护，记录鸟类活动，清理垃圾。需要有较好的体力，能适应户外环境。',
-      contact: '张老师 138-xxxx-xxxx'
-    },
-    {
-      id: '2',
-      role: '鸟类环志助理',
-      req: '需体力好，候鸟季 3-5 月',
-      location: '南汇嘴观海公园',
-      time: '3月-5月 全天',
-      spots: 8,
-      img: $r('app.media.news_owl'),
-      description: '协助专业人员进行候鸟环志工作，包括捕捉、测量、记录、放飞等环节。需连续参与一周以上。',
-      contact: '李老师 139-xxxx-xxxx'
-    },
-    {
-      id: '3',
-      role: '科普讲解志愿者',
-      req: '周末在博物馆为小朋友讲解',
-      location: '上海自然博物馆',
-      time: '每周日 10:00-16:00',
-      spots: 10,
-      img: $r('app.media.news_discovery'),
-      description: '为参观的小朋友和家长讲解鸟类知识，引导正确的观鸟理念。需要有亲和力，善于表达。',
-      contact: '王老师 137-xxxx-xxxx'
-    },
-    {
-      id: '4',
-      role: '社区宣传专员',
-      req: '擅长沟通，有文案或设计经验优先',
-      location: '各社区居委会',
-      time: '工作日晚间',
-      spots: 20,
-      img: $r('app.media.img_donate_banner'),
-      description: '进入社区进行鸟类保护知识宣传，布置展板，发放手册。',
-      contact: '刘老师 136-xxxx-xxxx'
+  @State projects: VolunteerProject[] = [];
+
+  aboutToAppear(): void {
+    this.loadProjects();
+  }
+
+  private mapProject(item: VolunteerProjectItem): VolunteerProject {
+    const contactParts: string[] = [];
+    if (item.contactName.trim().length > 0) {
+      contactParts.push(item.contactName.trim());
     }
-  ];
+    if (item.contactPhone.trim().length > 0) {
+      contactParts.push(item.contactPhone.trim());
+    }
+
+    return {
+      id: item.id,
+      role: item.role,
+      req: item.requirementText,
+      location: item.location,
+      time: item.serviceTime,
+      timeType: item.serviceTimeType,
+      spots: item.remainingSpots,
+      img: mapVolunteerProjectResource(item.imageKey),
+      description: item.description,
+      contact: contactParts.join(' ')
+    };
+  }
+
+  private async loadProjects() {
+    this.isLoading = true;
+    try {
+      const remoteProjects: VolunteerProjectItem[] = await BirdBackendService.fetchVolunteerProjects();
+      this.projects = remoteProjects.map((item: VolunteerProjectItem) => this.mapProject(item));
+    } catch (_e) {
+      this.projects = [];
+      promptAction.showToast({ message: '志愿项目加载失败，请检查后端服务' });
+    } finally {
+      this.isLoading = false;
+    }
+  }
 
   // 筛选后的项目列表
   private getFilteredProjects(): VolunteerProject[] {
     return this.projects.filter(p => {
-      const matchTime = this.selectedTime === '全部时间' || p.time.includes(this.selectedTime);
+      const matchTime = this.selectedTime === '全部时间' ||
+        p.timeType === this.selectedTime ||
+        p.time.includes(this.selectedTime);
       const matchSearch = this.searchKeyword === '' ||
       p.role.includes(this.searchKeyword) ||
       p.description.includes(this.searchKeyword) ||
@@ -156,19 +155,52 @@ struct VolunteerApplicationPage {
       }
 
       // 4. 项目列表
-      List({ space: 12 }) {
-        ForEach(this.getFilteredProjects(), (project: VolunteerProject) => {
-          ListItem() {
-            this.ProjectCard(project);
-          }
-        });
+      if (this.isLoading) {
+        Column() {
+          LoadingProgress()
+            .width(36)
+            .height(36)
+            .color('#4CAF50');
+          Text('正在加载志愿项目...')
+            .fontSize(14)
+            .fontColor('#999')
+            .margin({ top: 12 });
+        }
+        .layoutWeight(1)
+        .width('100%')
+        .justifyContent(FlexAlign.Center);
+      } else if (this.getFilteredProjects().length === 0) {
+        Column({ space: 12 }) {
+          Text('暂无符合条件的志愿项目')
+            .fontSize(16)
+            .fontColor('#333');
+          Text('可以尝试修改筛选条件，或稍后再来看看')
+            .fontSize(12)
+            .fontColor('#999');
+        }
+        .layoutWeight(1)
+        .width('100%')
+        .padding({ left: 16, right: 16 })
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center);
+      } else {
+        List({ space: 12 }) {
+          ForEach(this.getFilteredProjects(), (project: VolunteerProject) => {
+            ListItem() {
+              this.ProjectCard(project);
+            }
+          });
+        }
+        .layoutWeight(1)
+        .padding({ left: 16, right: 16 })
+        .scrollBar(BarState.Off);
       }
-      .layoutWeight(1)
-      .padding({ left: 16, right: 16 })
-      .scrollBar(BarState.Off);
 
       // 5. 底部导航栏
       this.BottomBar();
+
+      // 6. 申请弹窗
+      this.ApplyDialog();
     }
     .width('100%')
     .height('100%')
