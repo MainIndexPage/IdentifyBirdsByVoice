@@ -182,6 +182,23 @@ export interface LoginResult {
   nickname: string
 }
 
+export interface GenerateBirdImagePayload {
+  prompt: string
+  negativePrompt?: string
+  size?: string
+  n?: number
+  promptExtend?: boolean
+  watermark?: boolean
+}
+
+export interface GenerateBirdImageResult {
+  requestId: string
+  model: string
+  prompt: string
+  imageUrl: string
+  imageUrls: string[]
+}
+
 function normalizeText(value: string | null | undefined, fallback: string = ''): string {
   if (value === null || value === undefined) return fallback
   return value
@@ -286,6 +303,7 @@ export class BirdBackendService {
   private static readonly COMMUNITY_PREFIX: string = '/api/community/posts'
   private static readonly AUTH_PREFIX: string = '/api/auth'
   private static readonly VOLUNTEER_PREFIX: string = '/api/volunteer'
+  private static readonly AI_PREFIX: string = '/api/ai/image'
 
   private static authToken: string = ''
   private static loginUserId: string = ''
@@ -421,6 +439,14 @@ export class BirdBackendService {
     return BirdBackendService.requestApiWithPrefix<T>(BirdBackendService.VOLUNTEER_PREFIX, path, method)
   }
 
+  private static async requestAiApi<T>(
+    path: string,
+    method: http.RequestMethod,
+    body?: Object
+  ): Promise<ApiResponse<T>> {
+    return BirdBackendService.requestApiWithPrefix<T>(BirdBackendService.AI_PREFIX, path, method, body)
+  }
+
   static async register(payload: RegisterPayload): Promise<boolean> {
     const res = await BirdBackendService.requestAuthApi<boolean>('/register', http.RequestMethod.POST, payload as Object)
     return res.code === 200
@@ -541,5 +567,28 @@ export class BirdBackendService {
     const res = await BirdBackendService.requestVolunteerApi<VolunteerProjectApiPayload[]>('/projects', http.RequestMethod.GET)
     if (res.code !== 200 || !res.data || !Array.isArray(res.data)) return []
     return res.data.map((item: VolunteerProjectApiPayload) => BirdBackendService.normalizeVolunteerProject(item))
+  }
+
+  static async generateBirdImage(payload: GenerateBirdImagePayload): Promise<GenerateBirdImageResult> {
+    const requestBody: GenerateBirdImagePayload = {
+      prompt: payload.prompt,
+      negativePrompt: payload.negativePrompt,
+      size: payload.size || '1024*1024',
+      n: payload.n || 1,
+      promptExtend: payload.promptExtend !== undefined ? payload.promptExtend : true,
+      watermark: payload.watermark !== undefined ? payload.watermark : false
+    }
+
+    const res = await BirdBackendService.requestAiApi<GenerateBirdImageResult>(
+      '/generate',
+      http.RequestMethod.POST,
+      requestBody as Object
+    )
+
+    if (res.code !== 200 || !res.data || !res.data.imageUrl || res.data.imageUrl.length === 0) {
+      throw new Error(normalizeText(res.msg, '图片生成失败'))
+    }
+
+    return res.data
   }
 }
