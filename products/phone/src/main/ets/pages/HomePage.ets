@@ -378,6 +378,48 @@ export struct HomePage {
             .height(128)
             .clickEffect({ level: ClickEffectLevel.MIDDLE })
             .onClick(() => this.openPage('pages/BirdImageGenerationPage', true))
+
+            Stack() {
+              Image($r('app.media.news_discovery'))
+                .width('100%')
+                .height('100%')
+                .objectFit(ImageFit.Cover)
+                .borderRadius(14)
+                .blur(4)
+
+              Column({ space: 8 }) {
+                Text('识别记录地图')
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#FFFFFF')
+                  .textShadow({
+                    radius: 4,
+                    color: '#80000000',
+                    offsetX: 0,
+                    offsetY: 1
+                  })
+                Text('在世界视图中查看每次识别留下的位置标记与鸟类记录')
+                  .fontSize(12)
+                  .fontColor('#F4F4F4')
+                  .textShadow({
+                    radius: 4,
+                    color: '#80000000',
+                    offsetX: 0,
+                    offsetY: 1
+                  })
+              }
+              .width('100%')
+              .height('100%')
+              .padding(16)
+              .alignItems(HorizontalAlign.Start)
+              .justifyContent(FlexAlign.Center)
+              .backgroundColor('rgba(0, 0, 0, 0.28)')
+              .borderRadius(14)
+            }
+            .width('100%')
+            .height(128)
+            .clickEffect({ level: ClickEffectLevel.MIDDLE })
+            .onClick(() => this.openPage('pages/RecognitionMapPage', true))
           }
           .width('100%')
           .padding({ left: 16, right: 16, bottom: 24 })

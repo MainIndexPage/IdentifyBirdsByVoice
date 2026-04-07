@@ -17,6 +17,8 @@
     "pages/BirdCharityPage",
     "pages/BirdPublicWelfarePage",
     "pages/VolunteerApplicationPage",
-    "pages/BirdImageGenerationPage"
+    "pages/BirdImageGenerationPage",
+    "pages/RecognitionHistoryPage",
+    "pages/RecognitionMapPage"
   ]
 }

@@ -14,11 +14,15 @@
     },
     {
       "name": "mic_permission_reason",
-      "value": "识别鸟鸣需要录制环境声音"
+      "value": "Recording bird sounds requires microphone access."
     },
     {
       "name": "internet_permission_reason",
-      "value": "需要网络权限来上传录音文件并识别鸟类"
+      "value": "Uploading audio and identifying birds requires network access."
+    },
+    {
+      "name": "location_permission_reason",
+      "value": "Saving bird recognition locations requires location access."
     }
   ]
 }
