@@ -105,7 +105,11 @@ struct BirdDetailPage {
   }
 
   private goBack(): void {
-    router.replaceUrl({ url: 'pages/BirdGallery' })
+    try {
+      router.back()
+    } catch (_e) {
+      router.replaceUrl({ url: 'pages/BirdGallery' })
+    }
   }
 
   build() {

@@ -99,6 +99,29 @@ interface VolunteerProjectApiPayload {
   sort_order?: number
 }
 
+interface RecognitionHistoryApiPayload {
+  id?: number
+  birdId?: number
+  bird_id?: number
+  confidence?: number
+  recognizedAt?: number
+  recognized_at?: number
+  latitude?: number
+  longitude?: number
+  locationName?: string
+  location_name?: string
+  rawLabel?: string
+  raw_label?: string
+  birdNameZh?: string
+  bird_nameZh?: string
+  bird_name_zh?: string
+  birdNameLatin?: string
+  bird_nameLatin?: string
+  bird_name_latin?: string
+  birdPoster?: string
+  bird_poster?: string
+}
+
 export interface BirdApiItem {
   birdId: number
   birdNameZh: string
@@ -165,6 +188,20 @@ export interface VolunteerProjectItem {
   sortOrder: number
 }
 
+export interface RecognitionHistoryItem {
+  id: string
+  birdId: number
+  confidence: number
+  recognizedAt: number
+  latitude?: number
+  longitude?: number
+  locationName: string
+  rawLabel: string
+  birdNameZh: string
+  birdNameLatin: string
+  birdPoster: string
+}
+
 export interface RegisterPayload {
   phone: string
   password: string
@@ -182,6 +219,33 @@ export interface LoginResult {
   nickname: string
 }
 
+export interface GenerateBirdImagePayload {
+  prompt: string
+  negativePrompt?: string
+  size?: string
+  n?: number
+  promptExtend?: boolean
+  watermark?: boolean
+}
+
+export interface GenerateBirdImageResult {
+  requestId: string
+  model: string
+  prompt: string
+  imageUrl: string
+  imageUrls: string[]
+}
+
+export interface CreateRecognitionRecordPayload {
+  birdId: number
+  confidence: number
+  recognizedAt?: number
+  latitude?: number
+  longitude?: number
+  locationName?: string
+  rawLabel?: string
+}
+
 function normalizeText(value: string | null | undefined, fallback: string = ''): string {
   if (value === null || value === undefined) return fallback
   return value
@@ -189,6 +253,11 @@ function normalizeText(value: string | null | undefined, fallback: string = ''):
 
 function normalizeNumber(value: number | null | undefined, fallback: number = 0): number {
   if (value === null || value === undefined || Number.isNaN(value)) return fallback
+  return value
+}
+
+function normalizeOptionalNumber(value: number | null | undefined): number | undefined {
+  if (value === null || value === undefined || Number.isNaN(value)) return undefined
   return value
 }
 
@@ -286,6 +355,7 @@ export class BirdBackendService {
   private static readonly COMMUNITY_PREFIX: string = '/api/community/posts'
   private static readonly AUTH_PREFIX: string = '/api/auth'
   private static readonly VOLUNTEER_PREFIX: string = '/api/volunteer'
+  private static readonly AI_PREFIX: string = '/api/ai/image'
 
   private static authToken: string = ''
   private static loginUserId: string = ''
@@ -397,8 +467,12 @@ export class BirdBackendService {
     throw new Error(`All backend endpoints failed: ${lastError}`)
   }
 
-  private static async requestApi<T>(path: string, method: http.RequestMethod): Promise<ApiResponse<T>> {
-    return BirdBackendService.requestApiWithPrefix<T>(BirdBackendService.API_PREFIX, path, method)
+  private static async requestApi<T>(
+    path: string,
+    method: http.RequestMethod,
+    body?: Object
+  ): Promise<ApiResponse<T>> {
+    return BirdBackendService.requestApiWithPrefix<T>(BirdBackendService.API_PREFIX, path, method, body)
   }
 
   private static async requestCommunityApi<T>(
@@ -419,6 +493,14 @@ export class BirdBackendService {
 
   private static async requestVolunteerApi<T>(path: string, method: http.RequestMethod): Promise<ApiResponse<T>> {
     return BirdBackendService.requestApiWithPrefix<T>(BirdBackendService.VOLUNTEER_PREFIX, path, method)
+  }
+
+  private static async requestAiApi<T>(
+    path: string,
+    method: http.RequestMethod,
+    body?: Object
+  ): Promise<ApiResponse<T>> {
+    return BirdBackendService.requestApiWithPrefix<T>(BirdBackendService.AI_PREFIX, path, method, body)
   }
 
   static async register(payload: RegisterPayload): Promise<boolean> {
@@ -466,6 +548,31 @@ export class BirdBackendService {
     return BirdBackendService.normalizeBird(res.data)
   }
 
+  static async createRecognitionRecord(payload: CreateRecognitionRecordPayload): Promise<boolean> {
+    const requestBody: CreateRecognitionRecordPayload = {
+      birdId: payload.birdId,
+      confidence: payload.confidence,
+      recognizedAt: payload.recognizedAt || Date.now(),
+      latitude: payload.latitude,
+      longitude: payload.longitude,
+      locationName: payload.locationName,
+      rawLabel: payload.rawLabel
+    }
+
+    const res = await BirdBackendService.requestApi<string>('/recognitions', http.RequestMethod.POST, requestBody as Object)
+    return res.code === 200
+  }
+
+  static async fetchRecognitionHistory(limit: number = 50): Promise<RecognitionHistoryItem[]> {
+    const safeLimit: number = Math.max(1, Math.min(limit, 200))
+    const res = await BirdBackendService.requestApi<RecognitionHistoryApiPayload[]>(
+      `/recognitions/history?limit=${safeLimit}`,
+      http.RequestMethod.GET
+    )
+    if (res.code !== 200 || !res.data || !Array.isArray(res.data)) return []
+    return res.data.map((item: RecognitionHistoryApiPayload) => BirdBackendService.normalizeRecognitionHistory(item))
+  }
+
   private static normalizeCommunityPost(item: PostApiPayload): CommunityPostItem {
     const createdText: string = normalizeText(pickText(item.createdAt, item.created_at, undefined, ''), '')
     const createdTimestamp: number = createdText.length > 0 ? Date.parse(createdText) : Date.now()
@@ -511,6 +618,22 @@ export class BirdBackendService {
     }
   }
 
+  private static normalizeRecognitionHistory(item: RecognitionHistoryApiPayload): RecognitionHistoryItem {
+    return {
+      id: normalizeNumber(item.id, 0).toString(),
+      birdId: normalizeNumber(pickNumber(item.birdId, item.bird_id, 0), 0),
+      confidence: normalizeNumber(item.confidence, 0),
+      recognizedAt: normalizeNumber(pickNumber(item.recognizedAt, item.recognized_at, 0), 0),
+      latitude: normalizeOptionalNumber(item.latitude),
+      longitude: normalizeOptionalNumber(item.longitude),
+      locationName: pickText(item.locationName, item.location_name, undefined, ''),
+      rawLabel: pickText(item.rawLabel, item.raw_label, undefined, ''),
+      birdNameZh: pickText(item.birdNameZh, item.bird_nameZh, item.bird_name_zh, '未知鸟类'),
+      birdNameLatin: pickText(item.birdNameLatin, item.bird_nameLatin, item.bird_name_latin, ''),
+      birdPoster: pickText(item.birdPoster, item.bird_poster, undefined, '')
+    }
+  }
+
   static async fetchCommunityPosts(): Promise<CommunityPostItem[]> {
     const res = await BirdBackendService.requestCommunityApi<PostApiPayload[]>('', http.RequestMethod.GET)
     if (res.code !== 200 || !res.data || !Array.isArray(res.data)) return []
@@ -541,5 +664,28 @@ export class BirdBackendService {
     const res = await BirdBackendService.requestVolunteerApi<VolunteerProjectApiPayload[]>('/projects', http.RequestMethod.GET)
     if (res.code !== 200 || !res.data || !Array.isArray(res.data)) return []
     return res.data.map((item: VolunteerProjectApiPayload) => BirdBackendService.normalizeVolunteerProject(item))
+  }
+
+  static async generateBirdImage(payload: GenerateBirdImagePayload): Promise<GenerateBirdImageResult> {
+    const requestBody: GenerateBirdImagePayload = {
+      prompt: payload.prompt,
+      negativePrompt: payload.negativePrompt,
+      size: payload.size || '1024*1024',
+      n: payload.n || 1,
+      promptExtend: payload.promptExtend !== undefined ? payload.promptExtend : true,
+      watermark: payload.watermark !== undefined ? payload.watermark : false
+    }
+
+    const res = await BirdBackendService.requestAiApi<GenerateBirdImageResult>(
+      '/generate',
+      http.RequestMethod.POST,
+      requestBody as Object
+    )
+
+    if (res.code !== 200 || !res.data || !res.data.imageUrl || res.data.imageUrl.length === 0) {
+      throw new Error(normalizeText(res.msg, '图片生成失败'))
+    }
+
+    return res.data
   }
 }
