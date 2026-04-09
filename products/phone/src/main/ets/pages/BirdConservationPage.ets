@@ -249,19 +249,23 @@ struct BirdConservationPage {
       Stack() {
         Image($r('app.media.banner_conservation'))
           .width('100%')
-          .height(180)
+          .height(152)
           .objectFit(ImageFit.Cover);
         Column() {
           Text('守护飞羽精灵').fontSize(24).fontWeight(FontWeight.Bold).fontColor('#fff');
           Text('每一种鸟类都是生态系统不可或缺的一环').fontSize(14).fontColor('#fff').margin({ top: 8 });
         }
-        .backgroundColor('rgba(0,0,0,0.4)')
+        .backgroundColor('rgba(0,0,0,0.36)')
         .width('100%')
         .height('100%')
+        .padding({ left: 14, right: 14 })
+        .alignItems(HorizontalAlign.Start)
         .justifyContent(FlexAlign.Center);
       }
-      .width('100%')
-      .borderRadius(0);
+      .width('90%')
+      .height(152)
+      .borderRadius(20)
+      .clip(true);
 
       Column({ space: 20 }) {
         // 重点保护鸟类
