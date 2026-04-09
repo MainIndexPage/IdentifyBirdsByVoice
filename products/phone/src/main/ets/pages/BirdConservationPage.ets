@@ -216,12 +216,14 @@ struct BirdConservationPage {
           }
           .height(44)
           .padding({ left: 24, right: 24 })
+          .justifyContent(FlexAlign.Center)
           .onClick(() => this.activeTab = idx);
         });
       }
       .width('100%')
       .backgroundColor('#FFFFFF')
       .justifyContent(FlexAlign.Center)
+      .alignItems(VerticalAlign.Center)
       .border({ width: { bottom: 1 }, color: '#EEEEEE' });
 
       // 内容区
