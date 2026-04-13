@@ -1,6 +1,6 @@
-import router from '@ohos.router'
+﻿import router from '@ohos.router'
 import promptAction from '@ohos.promptAction'
-import { BirdApiItem, BirdBackendService, mapPosterResource } from '../services/BirdBackendService'
+import { BirdApiItem, BirdBackendService, mapPosterResource, PosterSource } from '../services/BirdBackendService'
 
 @Entry
 @Component
@@ -15,7 +15,7 @@ struct BirdDetailPage {
   @State birdBreeding: string = '加载中...'
   @State birdProtection: string = '加载中...'
   @State birdIntro: string = '加载中...'
-  @State birdPoster: Resource = $r('app.media.ic_close')
+  @State birdPoster: PosterSource = $r('app.media.ic_close')
 
   aboutToAppear(): void {
     console.info('BirdDetail final aboutToAppear')
@@ -257,3 +257,4 @@ struct BirdDetailPage {
     .backgroundColor('#F6F7F9')
   }
 }
+

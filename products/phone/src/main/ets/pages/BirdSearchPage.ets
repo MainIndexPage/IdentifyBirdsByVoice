@@ -1,6 +1,6 @@
-import router from '@ohos.router'
+﻿import router from '@ohos.router'
 import promptAction from '@ohos.promptAction'
-import { BirdApiItem, BirdBackendService, mapPosterResource } from '../services/BirdBackendService'
+import { BirdApiItem, BirdBackendService, mapPosterResource, PosterSource } from '../services/BirdBackendService'
 
 interface SearchBird {
   id: number
@@ -9,7 +9,7 @@ interface SearchBird {
   family: string
   habitat: string
   protection: string
-  poster: Resource
+  poster: PosterSource
   tags: string[]
 }
 
@@ -390,3 +390,4 @@ struct BirdSearchPage {
     .height('100%')
   }
 }
+

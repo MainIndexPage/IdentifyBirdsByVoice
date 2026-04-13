@@ -1,4 +1,4 @@
-import router from '@ohos.router'
+﻿import router from '@ohos.router'
 import hilog from '@ohos.hilog'
 import promptAction from '@ohos.promptAction'
 import picker from '@ohos.file.picker'
@@ -8,7 +8,7 @@ import { abilityAccessCtrl, bundleManager, common } from '@kit.AbilityKit'
 import { geoLocationManager } from '@kit.LocationKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { AudioCapture } from '../utils/AudioCapture'
-import { BirdApiItem, BirdBackendService, mapPosterResource } from '../services/BirdBackendService'
+import { BirdApiItem, BirdBackendService, mapPosterResource, PosterSource } from '../services/BirdBackendService'
 
 interface NavItem {
   name: string
@@ -58,7 +58,7 @@ struct BirdSoundRecognitionPage {
   @State private recordBtnText: string = '开始录音'
   @State private currentNavIndex: number = 2
   @State private resultDescription: string = ''
-  @State private currentBirdImage: Resource | null = null
+  @State private currentBirdImage: PosterSource | null = null
   @State private matchedBirdId: number = -1
 
   private navItems: NavItem[] = [
@@ -696,3 +696,4 @@ struct BirdSoundRecognitionPage {
     .height('100%')
   }
 }
+

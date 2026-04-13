@@ -236,6 +236,8 @@ export interface GenerateBirdImageResult {
   imageUrls: string[]
 }
 
+export type PosterSource = Resource | string
+
 export interface CreateRecognitionRecordPayload {
   birdId: number
   confidence: number
@@ -299,8 +301,24 @@ function parseJsonImages(value: string | null | undefined): string[] {
   }
 }
 
-export function mapPosterResource(_posterKey: string | null | undefined): Resource {
-  const normalizedInput: string = normalizeText(_posterKey, '')
+export function mapPosterResource(_posterKey: string | null | undefined): PosterSource {
+  const normalizedInput: string = normalizeText(_posterKey, '').trim()
+  if (normalizedInput.length === 0) {
+    return $r('app.media.ic_close')
+  }
+
+  if (normalizedInput.startsWith('http://') || normalizedInput.startsWith('https://')) {
+    return normalizedInput
+  }
+
+  if (normalizedInput.startsWith('/')) {
+    return `${BirdBackendService.getBaseUrl()}${normalizedInput}`
+  }
+
+  if (normalizedInput.includes('/')) {
+    return `${BirdBackendService.getBaseUrl()}/${normalizedInput.replace(/^\/+/, '')}`
+  }
+
   const normalizedKey: string = normalizedInput.startsWith('app.media.')
     ? normalizedInput.substring(10)
     : normalizedInput
@@ -321,10 +339,14 @@ export function mapPosterResource(_posterKey: string | null | undefined): Resour
     case 'Aix_galericulata': return $r('app.media.Aix_galericulata')
     case 'Pseudocolopteryx_acutipennis_Subtropical_Doradito': return $r('app.media.Pseudocolopteryx_acutipennis_Subtropical_Doradito')
     case 'Mellisuga_helenae_Bee_Hummingbird': return $r('app.media.Mellisuga_helenae_Bee_Hummingbird')
-    default: return $r('app.media.ic_close')
+    default: {
+      const posterFileName: string = /\.(png|jpg|jpeg|webp)$/i.test(normalizedKey)
+        ? normalizedKey
+        : `${normalizedKey}.png`
+      return `${BirdBackendService.getBaseUrl()}/media/birds/${encodeURIComponent(posterFileName)}`
+    }
   }
 }
-
 export function mapCallResource(_callKey: string | null | undefined): Resource {
   return $r('app.media.voice')
 }
@@ -350,6 +372,7 @@ export class BirdBackendService {
     'http://127.0.0.1:8001',
     'http://localhost:8001'
   ]
+  private static activeBaseUrl: string = BirdBackendService.BASE_URLS[0]
 
   private static readonly API_PREFIX: string = '/api/catalog'
   private static readonly COMMUNITY_PREFIX: string = '/api/community/posts'
@@ -359,6 +382,12 @@ export class BirdBackendService {
 
   private static authToken: string = ''
   private static loginUserId: string = ''
+
+  static getBaseUrl(): string {
+    return BirdBackendService.activeBaseUrl.length > 0
+      ? BirdBackendService.activeBaseUrl
+      : BirdBackendService.BASE_URLS[0]
+  }
 
   private static readToken(): string {
     const raw: Object | undefined = AppStorage.get('authToken') as Object | undefined
@@ -444,6 +473,7 @@ export class BirdBackendService {
 
         const parsed = JSON.parse(resp.result as string) as ApiResponseLike<T> | T
         const wrapped = parsed as ApiResponseLike<T>
+        BirdBackendService.activeBaseUrl = baseUrl
         if (wrapped.code !== undefined) {
           return {
             code: wrapped.code,
@@ -689,3 +719,6 @@ export class BirdBackendService {
     return res.data
   }
 }
+
+
+
