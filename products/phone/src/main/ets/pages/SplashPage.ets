@@ -44,7 +44,7 @@ struct SplashPage {
           .height(120)
           .margin({ bottom: 20 })
 
-        Text('林音识羽')
+        Text('林声识羽')
           .fontSize(24)
           .fontWeight(FontWeight.Bold)
           .fontColor(Color.White)
