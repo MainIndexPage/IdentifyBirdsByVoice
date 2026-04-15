@@ -11,7 +11,7 @@ struct LoginPage {
   build() {
     Column() {
       // 顶部 slogan
-      Text('听音识鸟')
+      Text('林音识羽')
         .fontSize(20)
         .fontWeight(FontWeight.Medium)
         .fontColor('#555')

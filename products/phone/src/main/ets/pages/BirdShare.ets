@@ -1,4 +1,4 @@
-﻿import router from '@ohos.router'
+import router from '@ohos.router'
 import photoAccessHelper from '@ohos.file.photoAccessHelper'
 import promptAction from '@ohos.promptAction'
 import { BirdBackendService, CommunityPostItem, CreateCommunityPostPayload } from '../services/BirdBackendService'
@@ -60,7 +60,7 @@ struct BirdSharingPage {
   private navItems: NavItem[] = [
     { name: '首页', icon: $r('app.media.nav_home'), route: 'pages/HomePage' },
     { name: '图鉴', icon: $r('app.media.nav_encyclopedia'), route: 'pages/BirdGallery' },
-    { name: '听声识鸟', icon: $r('app.media.nav_listen'), route: 'pages/BirdSoundRecognitionPage' },
+    { name: '林音识羽', icon: $r('app.media.nav_listen'), route: 'pages/BirdSoundRecognitionPage' },
     { name: '社区', icon: $r('app.media.nav_community'), route: 'pages/BirdSharePage' },
     { name: '我的', icon: $r('app.media.nav_profile'), route: 'pages/ProfilePage' }
   ]

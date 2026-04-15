@@ -42,7 +42,7 @@ struct BirdMonitorPage {
   private navList: NavItem[] = [
     { name: '首页', icon: $r('app.media.nav_home'), route: 'pages/HomePage' },
     { name: '图鉴', icon: $r('app.media.nav_encyclopedia'), route: 'pages/BirdGallery' },
-    { name: '林声识羽', icon: $r('app.media.nav_listen'), route: 'pages/BirdSoundRecognitionPage' },
+    { name: '林音识羽', icon: $r('app.media.nav_listen'), route: 'pages/BirdSoundRecognitionPage' },
     { name: '社群', icon: $r('app.media.nav_community'), route: 'pages/BirdShare' },
     { name: '我的', icon: $r('app.media.nav_profile'), route: 'pages/ProfilePage' }
   ]
@@ -66,7 +66,7 @@ struct BirdMonitorPage {
       status: 'online',
       lastActive: '2分钟前',
       todayCount: 156,
-      videoUrl: 'https://your-domain.com/live/poyang-lake-01.m3u8',
+      videoUrl: $rawfile('bird.mp4'),
       poster: $r('app.media.monitor_2'),
       isPlaying: false
     },
@@ -77,7 +77,7 @@ struct BirdMonitorPage {
       status: 'online',
       lastActive: '5分钟前',
       todayCount: 89,
-      videoUrl: 'https://your-domain.com/live/qinghai-lake-01.m3u8',
+      videoUrl: $rawfile('bird.mp4'),
       poster: $r('app.media.monitor_3'),
       isPlaying: false
     },
@@ -88,7 +88,7 @@ struct BirdMonitorPage {
       status: 'offline',
       lastActive: '2小时前',
       todayCount: 0,
-      videoUrl: 'https://your-domain.com/live/chongming-dongtan-01.m3u8',
+      videoUrl: $rawfile('bird.mp4'),
       poster: $r('app.media.monitor_4'),
       isPlaying: false
     }

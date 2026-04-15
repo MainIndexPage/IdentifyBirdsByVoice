@@ -22,7 +22,7 @@ interface RecognizeResult {
 @Component
 struct BirdRecognitionPage {
   /* 底部导航 */
-  @State currentNavIndex: number = 2   // 听音识鸟/识别页高亮
+  @State currentNavIndex: number = 2   // 林音识羽/识别页高亮
   private navItems: NavItem[] = [
     { name: '首页', icon: $r('app.media.nav_home'), route: 'pages/HomePage' },
     { name: '图鉴', icon: $r('app.media.nav_encyclopedia'), route: 'pages/BirdGallery' },
